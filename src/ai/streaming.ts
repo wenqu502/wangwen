@@ -1,4 +1,4 @@
-import { chatStream } from './client'
+import { chatStream, mockChatStream, isMockMode } from './client'
 import type { AIChatOptions } from './types'
 
 export interface StreamingResult {
@@ -17,7 +17,9 @@ export async function handleStreamingResponse(
   let fullContent = ''
   const toolCallMap = new Map<string, { id: string; name: string; args: string }>()
 
-  for await (const chunk of chatStream(options)) {
+  const stream = isMockMode() ? mockChatStream(options) : chatStream(options)
+
+  for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta
     if (!delta) continue
 

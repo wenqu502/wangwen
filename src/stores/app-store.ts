@@ -28,7 +28,7 @@ export interface ChatMessage {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      currentWorkId: null,
+      currentWorkId: 'default',
       currentTab: 'character',
       isChatPanelOpen: true,
       isLoading: false,

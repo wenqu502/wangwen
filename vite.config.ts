@@ -10,21 +10,48 @@ export default defineConfig({
     },
   },
   build: {
+    // 生产环境不生成 sourcemap，减少构建产物体积
+    sourcemap: false,
+    // 代码拆分阈值：超过 30KB 的模块自动拆分
+    chunkSizeWarningLimit: 30,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React 核心运行时（变化最少，长期缓存）
-          'vendor-react': ['react', 'react-dom'],
-          // 可视化画布库（体积大、按需加载）
-          'vendor-canvas': ['@xyflow/react', '@antv/g6'],
-          // 状态管理 + 工具库
-          'vendor-state': ['zustand', 'immer', 'dexie'],
-          // AI 客户端 + PDF 导出
-          'vendor-ai': ['openai', 'html2canvas', 'jspdf'],
+        // 入口文件命名策略
+        entryFileNames: 'assets/[name]-[hash].js',
+        // chunk 文件命名策略（hash + 可读名）
+        chunkFileNames: 'assets/[name]-[hash].js',
+        // 静态资源命名策略
+        assetFileNames: (assetInfo) => {
+          const name = assetInfo.name ?? ''
+          if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(name)) {
+            return 'assets/images/[name]-[hash][extname]'
+          }
+          if (/\.(css)$/i.test(name)) {
+            return 'assets/css/[name]-[hash][extname]'
+          }
+          return 'assets/[name]-[hash][extname]'
+        },
+        manualChunks(id) {
+          if (/[\\/]node_modules[\\/](react|react-dom)[\\/]/.test(id)) {
+            return 'vendor-react'
+          }
+          if (/[\\/]node_modules[\\/]@xyflow[\\/]react[\\/]/.test(id) || /[\\/]node_modules[\\/]@antv[\\/]g6[\\/]/.test(id)) {
+            return 'vendor-canvas'
+          }
+          if (/[\\/]node_modules[\\/](zustand|immer|dexie)[\\/]/.test(id)) {
+            return 'vendor-state'
+          }
+          if (/[\\/]node_modules[\\/](openai|html2canvas|jspdf)[\\/]/.test(id)) {
+            return 'vendor-ai'
+          }
+          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) {
+            return 'vendor-ui'
+          }
+          if (/[\\/]node_modules[\\/](clsx|tailwind-merge|class-variance-authority)[\\/]/.test(id)) {
+            return 'vendor-utils'
+          }
         },
       },
     },
-    // 代码拆分阈值：超过 30KB 的模块自动拆分
-    chunkSizeWarningLimit: 30,
   },
 })

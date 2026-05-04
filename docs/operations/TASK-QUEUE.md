@@ -1,112 +1,104 @@
-# 织文 (WangWen) — Program Agent 协作任务队列
+# 96号项目 — Program Agent 协作任务队列
 
-> **文档用途**: 多 Agent 协作流水线状态看板
-> **管理规范**: 每完成一项任务，由 `program-system-architecture-expert` 进行 Code Review
-> **更新频率**: 每完成一项立即更新
-
----
-
-## 项目基础信息
-
-| 字段 | 值 |
-|------|-----|
-| 项目名称 | 织文 (WangWen) — 小说网文作者Web |
-| 项目路径 | `~/Desktop/wyq_openclaw/openclaw/【第二大脑】/second_brain/【98】自有项目库/【96】小说网文作者Web` |
-| 技术栈 | Vite + React 19 + TypeScript + Zustand/Immer + Dexie + Tailwind CSS |
-| 架构师 | `program-system-architecture-expert` |
-| 前端工程师 | `program-frontend-engineering-expert` |
-| QA | `program-quality-assurance-expert` |
-| 产品经理 | `program-product-management-expert` |
+> **项目**: 小说网文作者Web (织文 WangWen)
+> **协作模式**: 多 Agent 流水线
+> **管理原则**: 每个任务完成后由 `program-system-architecture-expert` Review
+> **更新时间**: 2026-05-04 17:00
 
 ---
 
-## Phase 1: P0 紧急修复（已全员完成 ✅）
+## 🎯 执行阶段总览
 
-| # | 编号 | 任务 | 负责人 | Reviewer | 状态 | 完成时间 |
-|---|------|------|--------|----------|------|----------|
-| 1 | P0-001 | Store 全量替换 → 精细化 selector | Wydq | 架构师 | ✅ 已 Review | 2026-05-04 |
-| 2 | P0-002 | API Key 暴露 → localStorage 用户输入 | Wydq | 架构师 | ✅ 已 Review | 2026-05-04 |
-| 3 | P0-003 | CSP 安全策略配置 | Wydq | 架构师 | ✅ 已 Review | 2026-05-04 |
-| 4 | P0-004 | IndexedDB 加密框架 | Wydq | 架构师 | ✅ 已 Review | 2026-05-04 |
-| 5 | P0-005 | 数据库版本迁移策略 | Wydq | 架构师 | ✅ 已 Review | 2026-05-04 |
-
-**Phase 1 验收状态**: ✅ 全部通过，编译零错误
+| 阶段 | 任务数 | 状态 | 负责人 |
+|------|--------|------|--------|
+| **Phase 0: P0 紧急修复** | 5 | ✅ 已完成 | Wydq |
+| **Phase 1: P1 风险修复** | 14 | 🟡 进行中 | `program-frontend-engineering-expert` |
+| **Phase 2: 功能开发** | 6 | ⏳ 待启动 | `program-frontend-engineering-expert` |
+| **Phase 3: 视觉与体验** | 3 | ⏳ 待启动 | `program-frontend-design-expert` |
+| **Phase 4: 质量与测试** | 2 | ⏳ 待启动 | `program-quality-assurance-expert` |
 
 ---
 
-## Phase 2: P1 核心优化（进行中 🟡）
+## ✅ Phase 0: P0 紧急修复（已完成）
 
-| # | 编号 | 任务 | 负责人 | Reviewer | 状态 | 备注 |
-|---|------|------|--------|----------|------|------|
-| 6 | P1-001 | 消息列表虚拟化 (react-virtuoso) | FE 工程师 | 架构师 | ⬜ 待分配 | 100+消息时滚动性能 |
-| 7 | P1-002 | Vite chunk 拆分策略 | FE 工程师 | 架构师 | ⬜ 待分配 | 已初步配置，需验证 |
-| 8 | P1-003 | AI 流式响应长度限制 | FE 工程师 | 架构师 | ⬜ 待分配 | 防止内存膨胀 |
-| 9 | P1-004 | AI Token 截断策略 | FE 工程师 | 架构师 | ⬜ 待分配 | 上下文压缩 |
-| 10 | P1-005 | 画布库大数据量预案 | FE 工程师 | 架构师 | ⬜ 待分配 | LOD + 可见性裁剪 |
-| 11 | P1-006 | AI 返回内容 XSS 净化 | FE 工程师 | 架构师 | ⬜ 待分配 | DOMPurify 集成 |
-| 12 | P1-007 | 网络重试 + 离线模式 | FE 工程师 | 架构师 | ⬜ 待分配 | 指数退避 |
-| 13 | P1-008 | Dexie 冗余索引清理 | 架构师 | 架构师 | ⬜ 待分配 | v2 迁移 |
-| 14 | P1-009 | relations 表 targetId 索引 | 架构师 | 架构师 | ⬜ 待分配 | 复合索引 |
-| 15 | P1-010 | Character.relations 双源数据 | 架构师 | 架构师 | ⬜ 待分配 | 数据模型重构 |
-| 16 | P1-011 | PlotNode 双向引用 → 单向 | 架构师 | 架构师 | ⬜ 待分配 | 简化维护 |
-| 17 | P1-012 | Context-builder 懒加载 + Worker | FE 工程师 | 架构师 | ⬜ 待分配 | 性能优化 |
-| 18 | P1-013 | 存储限额监控面板 | FE 工程师 | 架构师 | ⬜ 待分配 | navigator.storage |
-| 19 | P1-014 | 图片存储策略 (Blob + 压缩) | FE 工程师 | 架构师 | ⬜ 待分配 | 图片上传优化 |
+| # | 编号 | 任务 | 状态 | 完成时间 |
+|---|------|------|------|----------|
+| 1 | P0-001 | Store 全量替换 → 精细化 selector | ✅ 已 Review | 2026-05-04 |
+| 2 | P0-002 | API Key 暴露 → localStorage 用户输入 | ✅ 已 Review | 2026-05-04 |
+| 3 | P0-003 | CSP 安全策略配置 | ✅ 已 Review | 2026-05-04 |
+| 4 | P0-004 | IndexedDB 加密框架 | ✅ 已 Review | 2026-05-04 |
+| 5 | P0-005 | 数据库版本迁移策略 | ✅ 已 Review | 2026-05-04 |
 
 ---
 
-## Phase 3: P2 体验提升（待启动 🟢）
+## 🟡 Phase 1: P1 核心风险修复（14 项）
 
-| # | 编号 | 任务 | 负责人 | Reviewer | 状态 |
-|---|------|------|--------|----------|------|
-| 20 | P2-001 | 路由懒加载 (React.lazy) | FE 工程师 | 架构师 | ⬜ |
-| 21 | P2-002 | Dexie 延迟初始化 | FE 工程师 | 架构师 | ⬜ |
-| 22 | P2-003 | 生产构建移除 StrictMode | FE 工程师 | 架构师 | ⬜ |
-| 23 | P2-004 | html2canvas 导出安全 | FE 工程师 | 架构师 | ⬜ |
-| 24 | P2-005 | 数据完整性 hash 校验 | FE 工程师 | 架构师 | ⬜ |
-| 25 | P2-006 | 导入/导出功能 | FE 工程师 | 架构师 | ⬜ |
-| 26 | P2-007 | 单表分页查询 | FE 工程师 | 架构师 | ⬜ |
-
----
-
-## Phase 4: 功能开发（待启动 🔵）
-
-| # | 功能 | 负责人 | Reviewer | 状态 | 优先级 |
-|---|------|--------|----------|------|--------|
-| 27 | 角色编辑表单（完整字段 + Dexie CRUD） | FE 工程师 | 架构师 | ⬜ | P1 |
-| 28 | 剧情树 React Flow 接入 | FE 工程师 | 架构师 | ⬜ | P1 |
-| 29 | 关系图 G6 接入 | FE 工程师 | 架构师 | ⬜ | P1 |
-| 30 | AI 流式输出完善（逐字更新 zustand） | FE 工程师 | 架构师 | ⬜ | P1 |
-| 31 | 设置面板集成（API Key + 加密） | FE 工程师 | 架构师 | ⬜ | P2 |
-| 32 | 作品管理（创建/切换/删除） | FE 工程师 | 架构师 | ⬜ | P2 |
-| 33 | 灵感便签富文本编辑 | FE 工程师 | 架构师 | ⬜ | P2 |
+| # | 编号 | 任务 | 描述 | 优先级 | 状态 | 负责人 | Reviewer |
+|---|------|------|------|--------|------|--------|----------|
+| 1 | P1-001 | 组件懒加载 | 首页非首屏模块 React.lazy + Suspense | 🔴 高 | ✅ 已 Review 通过 | `frontend-engineering` | `architecture-expert` |
+| 2 | P1-002 | Vite Chunk 拆分 | manualChunks 配置 | 🔴 高 | 🏃 执行中 | `frontend-engineering` | `architecture-expert` |
+| 3 | P1-003 | useMemo/useCallback | 大型列表记忆化 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 4 | P1-004 | IndexedDB 分区 | 读写分离 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 5 | P1-005 | Dexie 事务优化 | 批量写入 + 错误处理 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 6 | P1-006 | XSS 输入净化 | DOMPurify 集成 | 🔴 高 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 7 | P1-007 | 错误边界 | ErrorBoundary | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 8 | P1-008 | Dexie 索引优化 | 移除冗余索引 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 9 | P1-009 | 复合索引 | [workId+targetId] 等 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 10 | P1-010 | 路由配置 | 404 + 路由守卫 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 11 | P1-011 | StrictMode | 确认开启 | 🟢 低 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 12 | P1-012 | useId | 列表唯一键 | 🟢 低 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 13 | P1-013 | Suspense | 可视化库懒加载 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 14 | P1-014 | 环境变量 | 统一配置默认值 | 🟢 低 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
 
 ---
 
-## 当前活跃任务
+## ⏳ Phase 2: 功能开发（6 项）
 
-| 任务编号 | 分配 Agent | 启动时间 | 预计完成 | 状态 |
-|----------|-----------|----------|----------|------|
-| （无） | — | — | — | — |
-
----
-
-## Review 规范
-
-1. **触发条件**: 任何 Agent 完成代码修改后
-2. **Review 流程**:
-   - 修改 Agent → 提交代码变更
-   - Wydq → 通知 `program-system-architecture-expert` 进行 Review
-   - 架构师 → 输出 Review 报告（通过/需修改/拒绝）
-   - Wydq → 根据 Review 结果更新任务状态
-3. **Review 检查项**:
-   - 类型安全（tsc -b 通过）
-   - 性能影响（渲染次数、内存占用）
-   - 安全合规（XSS、CSP、加密）
-   - 代码风格一致性
-   - 向后兼容性
+| # | 编号 | 任务 | 状态 | 负责人 | Reviewer |
+|---|------|------|------|--------|----------|
+| 1 | F-001 | 角色编辑表单 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 2 | F-002 | AI 流式输出完善 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 3 | F-003 | 剧情树 React Flow | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 4 | F-004 | 关系图 G6 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 5 | F-005 | 体系管理页面 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 6 | F-006 | 灵感便签增强 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
 
 ---
 
-> **最后更新**: 2026-05-04
-> **更新人**: 吴奕大青 (Wydq)
+## ⏳ Phase 3: 视觉与体验（3 项）
+
+| # | 编号 | 任务 | 状态 | 负责人 | Reviewer |
+|---|------|------|------|--------|----------|
+| 1 | UI-001 | 角色卡片设计 | ⏳ 待开始 | `frontend-design` | `architecture-expert` |
+| 2 | UI-002 | 暗黑模式 | ⏳ 待开始 | `frontend-design` | `architecture-expert` |
+| 3 | UI-003 | 动画过渡 | ⏳ 待开始 | `frontend-design` | `architecture-expert` |
+
+---
+
+## ⏳ Phase 4: 质量与测试（2 项）
+
+| # | 编号 | 任务 | 状态 | 负责人 | Reviewer |
+|---|------|------|------|--------|----------|
+| 1 | QA-001 | TypeScript 严格模式 | ⏳ 待开始 | `quality-assurance` | `architecture-expert` |
+| 2 | QA-002 | E2E 测试框架 | ⏳ 待开始 | `quality-assurance` | `architecture-expert` |
+
+---
+
+## 🔄 执行规则
+
+1. **顺序执行**: 按 Phase 0 → 1 → 2 → 3 → 4 推进
+2. **Review 必须**: 每完成一个任务，spawn `program-system-architecture-expert` Review
+3. **失败回滚**: Review 不通过需回滚重做
+4. **文档同步**: 每完成一个任务，更新本文档状态
+
+---
+
+> **当前执行**: P1-001 组件懒加载 — 🏃 执行中
+> **下次 Review**: P1-001 完成后
+
+---
+
+> **当前执行**: P1-001 已完成 → 🏃 架构师 Review 中
+> **已完成时间**: 2026-05-04
+> **编译状态**: tsc -b ✅ | build ✅
+> **代码分割**: 5 个独立 chunk 已生成
