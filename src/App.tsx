@@ -146,6 +146,18 @@ function App() {
     return () => mq.removeEventListener('change', handleChange)
   }, [])
 
+  const handleExport = useCallback(async () => {
+    if (!currentWorkId || isExporting) return
+    setIsExporting(true)
+    try {
+      await exportWork(currentWorkId)
+    } catch (err) {
+      console.error('导出失败', err)
+    } finally {
+      setIsExporting(false)
+    }
+  }, [currentWorkId, isExporting])
+
   // 全局键盘快捷键
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -184,18 +196,6 @@ function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isSearchOpen, isSettingsOpen, handleExport])
-
-  const handleExport = useCallback(async () => {
-    if (!currentWorkId || isExporting) return
-    setIsExporting(true)
-    try {
-      await exportWork(currentWorkId)
-    } catch (err) {
-      console.error('导出失败', err)
-    } finally {
-      setIsExporting(false)
-    }
-  }, [currentWorkId, isExporting])
 
   const ActiveCanvas = TAB_COMPONENTS[currentTab]
 
