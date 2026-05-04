@@ -21,9 +21,9 @@ type SearchResultItem = {
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebounce(query, 250)
-  const [results, setResults] = useStateState<SearchResultItem[]>([])
+  const [results, setResults] = useState<SearchResultItem[]>([])
   const [loading, setLoading] = useState(false)
-  const inputRef = useRefRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const currentWorkId = useAppStore((s) => s.currentWorkId)
   const setCurrentTab = useAppStore((s) => s.setCurrentTab)
 
