@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAppStore } from '@/stores/app-store'
+import { sanitizeHtml } from '@/utils/sanitize'
 import { Send, Bot, User, Loader2, Sparkles, Users, GitBranch, Network, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { handleStreamingResponse } from '@/ai/streaming'
@@ -170,7 +171,11 @@ export function ChatPanel() {
                   : 'bg-neutral-100 text-neutral-800 rounded-bl-md'
               )}
             >
-              {msg.content}
+              {msg.role === 'assistant' ? (
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(msg.content) }} />
+              ) : (
+                <div>{msg.content}</div>
+              )}
             </div>
           </div>
         ))}

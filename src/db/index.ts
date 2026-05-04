@@ -15,11 +15,11 @@ class WangWenDB extends Dexie {
     // === v1: 初始版本 (2026-05-03) ===
     this.version(1).stores({
       works: 'id, name, createdAt',
-      characters: 'id, workId, name, [workId+name], createdAt',
-      plotNodes: 'id, workId, [workId+status], createdAt',
-      relations: 'id, workId, [workId+sourceId], createdAt',
-      systems: 'id, workId, createdAt',
-      ideas: 'id, workId, [workId+status], createdAt',
+      characters: 'id, workId, [workId+name], createdAt',
+      plotNodes: 'id, workId, [workId+status]',
+      relations: 'id, workId, [workId+sourceId], [workId+targetId]',
+      systems: 'id, workId',
+      ideas: 'id, workId, [workId+status]',
     })
 
     // === v2: 索引优化 + 角色状态字段 (预留) ===

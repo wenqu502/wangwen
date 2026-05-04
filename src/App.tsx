@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { exportWork } from '@/lib/export'
 import { SearchModal } from '@/components/search/SearchModal'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 const CharacterCanvas = lazy(() => import('@/modules/character/CharacterCanvas').then(m => ({ default: m.CharacterCanvas })))
 const PlotCanvas = lazy(() => import('@/modules/plot/PlotCanvas').then(m => ({ default: m.PlotCanvas })))
@@ -157,9 +158,11 @@ function App() {
         <main className="flex-1 flex flex-col min-w-0">
           {/* 画布 */}
           <div className="flex-1 overflow-auto p-4">
-            <Suspense fallback={<LoadingFallback />}>
-              <ActiveCanvas />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <ActiveCanvas />
+              </Suspense>
+            </ErrorBoundary>
           </div>
 
           {/* 底部 Tab 切换 */}

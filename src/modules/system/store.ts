@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
+import { useMemo } from 'react'
 import type { WorkSystem } from '@/types'
 import { db } from '@/db'
 
@@ -58,7 +59,8 @@ export const useSystemStore = create<SystemState>()(
 // === Selector Hooks（性能优化）===
 
 export function useSystemList(): WorkSystem[] {
-  return useSystemStore(useShallow((s) => Object.values(s.systems)))
+  const systems = useSystemStore(useShallow((s) => s.systems))
+  return useMemo(() => Object.values(systems), [systems])
 }
 
 export function useSystemCount(): number {

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
+import { useMemo } from 'react'
 import type { Idea } from '@/types'
 import { db } from '@/db'
 
@@ -89,7 +90,8 @@ export const useIdeaStore = create<IdeaState>()(
 // === Selector Hooks（性能优化）===
 
 export function useIdeaList(): Idea[] {
-  return useIdeaStore(useShallow((s) => Object.values(s.ideas)))
+  const ideas = useIdeaStore(useShallow((s) => s.ideas))
+  return useMemo(() => Object.values(ideas), [ideas])
 }
 
 export function useIdeaCount(): number {

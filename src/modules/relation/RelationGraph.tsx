@@ -8,7 +8,7 @@ interface RelationGraphProps {
 }
 
 export function RelationGraph({ characters, edges, onSelectCharacter }: RelationGraphProps) {
-  const containerRef = useRefRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const networkRef = useRef<any>(null)
 
   useEffect(() => {
