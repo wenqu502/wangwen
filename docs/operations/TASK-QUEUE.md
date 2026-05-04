@@ -36,7 +36,7 @@
 | # | 编号 | 任务 | 描述 | 优先级 | 状态 | 负责人 | Reviewer |
 |---|------|------|------|--------|------|--------|----------|
 | 1 | P1-001 | 组件懒加载 | 首页非首屏模块 React.lazy + Suspense | 🔴 高 | ✅ 已 Review 通过 | `frontend-engineering` | `architecture-expert` |
-| 2 | P1-002 | Vite Chunk 拆分 | manualChunks 配置 | 🔴 高 | 🏃 执行中 | `frontend-engineering` | `architecture-expert` |
+| 2 | P1-002 | Vite Chunk 拆分 | manualChunks 配置 | 🔴 高 | ✅ 待 Review | `frontend-engineering` | `architecture-expert` |
 | 3 | P1-003 | useMemo/useCallback | 大型列表记忆化 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
 | 4 | P1-004 | IndexedDB 分区 | 读写分离 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
 | 5 | P1-005 | Dexie 事务优化 | 批量写入 + 错误处理 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |

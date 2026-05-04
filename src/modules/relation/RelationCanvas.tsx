@@ -1,9 +1,10 @@
 import { useRelationStore, useRelationEdgeList } from './store'
 import { useCharacterStore, useCharacterList } from '@/modules/character/store'
-import { Network, Plus, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Network, Plus, Trash2, Eye, EyeOff, List, Share2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { generateRelationId } from '@/utils/id-generator'
+import { RelationGraph } from './RelationGraph'
 
 const PRESET_RELATION_TYPES = [
   '爱慕', '暗恋', '前任', '宿敌', '挚友', '情敌',
@@ -19,6 +20,7 @@ export function RelationCanvas() {
   const { characters } = useCharacterStore()
 
   const [showHidden, setShowHidden] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'graph'>('list')
   const [isAdding, setIsAdding] = useState(false)
   const [newRelation, setNewRelation] = useState({
     sourceId: '',
@@ -53,6 +55,28 @@ export function RelationCanvas() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-neutral-900">人物关系图</h2>
         <div className="flex items-center gap-2">
+          <div className="flex items-center bg-neutral-100 rounded-md p-0.5">
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors',
+                viewMode === 'list' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+              )}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>列表</span>
+            </button>
+            <button
+              onClick={() => setViewMode('graph')}
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors',
+                viewMode === 'graph' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+              )}
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>网络图</span>
+            </button>
+          </div>
           <button
             onClick={() => setShowHidden(!showHidden)}
             className={cn(
@@ -80,6 +104,13 @@ export function RelationCanvas() {
             <p className="text-neutral-500 font-medium">还没有关系数据</p>
             <p className="text-sm mt-1">在右侧 AI 面板说"梳理一下人物关系..."</p>
           </div>
+        </div>
+      ) : viewMode === 'graph' ? (
+        <div className="flex-1 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+          <RelationGraph
+            characters={characterList}
+            edges={filteredEdges}
+          />
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-3 overflow-hidden">

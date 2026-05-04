@@ -1,15 +1,19 @@
+import { useState } from 'react'
 import { useCharacterStore, useCharacterList, useSelectedCharacter, useSelectedCharacterId } from './store'
 import { useAppStore } from '@/stores/app-store'
-import { Plus, User, Trash2, Edit3, Sparkles } from 'lucide-react'
+import { Plus, User, Trash2, Edit3, Sparkles, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { generateCharacterId } from '@/utils/id-generator'
+import type { Character } from '@/types'
 
 export function CharacterCanvas() {
   const characterList = useCharacterList()
   const selected = useSelectedCharacter()
   const selectedId = useSelectedCharacterId()
-  const { selectCharacter, addCharacter, deleteCharacter } = useCharacterStore()
+  const { selectCharacter, addCharacter, deleteCharacter, updateCharacter } = useCharacterStore()
   const { addMessage } = useAppStore()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useStateState<Partial<Partial<Character>>({})
 
   const handleCreateMock = () => {
     const id = generateCharacterId()
@@ -49,6 +53,7 @@ export function CharacterCanvas() {
               onClick={handleCreateMock}
               className="p-1.5 text-neutral-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
               title="手动创建"
+              aria-label="手动创建"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -114,21 +119,84 @@ export function CharacterCanvas() {
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold">
-                  {selected.name.charAt(0)}
+                  {(isEditing ? editForm.name : selected.name)?.charAt(0)}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-neutral-900">{selected.name}</h3>
-                  <p className="text-sm text-neutral-500">
-                    {selected.aliases.join(' / ') || '无别名'}
-                  </p>
+                  {isEditing ? (
+                    <input
+                      value={editForm.name || ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                      className="text-xl font-bold text-neutral-900 border-b border-neutral-300 outline-none bg-transparent w-full"
+                      placeholder="角色名"
+                    />
+                  ) : (
+                    <h3 className="text-xl font-bold text-neutral-900">{selected.name}</h3>
+                  )}
+                  {isEditing ? (
+                    <input
+                      value={(editForm.aliases || []).join(' / ')}
+                      onChange={(e) =>
+                        setEditForm((f) => ({ ...f, aliases: e.target.value.split(/[\/，,]/).map((s) => s.trim()).filter(Boolean) }))
+                      }
+                      className="text-sm text-neutral-500 border-b border-neutral-300 outline-none bg-transparent w-full mt-1"
+                      placeholder="别名（用 / 分隔）"
+                    />
+                  ) : (
+                    <p className="text-sm text-neutral-500">
+                      {selected.aliases.join(' / ') || '无别名'}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-1">
-                <button className="p-2 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
-                  <Edit3 className="w-4 h-4" />
-                </button>
+                {!isEditing ? (
+                  <button
+                    onClick={() => {
+                      setIsEditing(true)
+                      setEditForm({ ...selected })
+                    }}
+                    aria-label="编辑角色"
+                    className="p-2 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (!editForm.name?.trim()) return
+                        updateCharacter(selected.id, (c) => {
+                          c.name = editForm.name || c.name
+                          c.aliases = editForm.aliases || c.aliases
+                          c.appearance = editForm.appearance ?? c.appearance
+                          c.background = editForm.background ?? c.background
+                          c.personality = { ...c.personality, ...(editForm.personality || {}) }
+                          c.goals = editForm.goals ?? c.goals
+                          c.updatedAt = new Date().toISOString()
+                        })
+                        setIsEditing(false)
+                        setEditForm({})
+                      }}
+                      aria-label="确认编辑"
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditing(false)
+                        setEditForm({})
+                      }}
+                      aria-label="取消编辑"
+                      className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => deleteCharacter(selected.id)}
+                  aria-label="删除角色"
                   className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -148,12 +216,25 @@ export function CharacterCanvas() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <InfoBlock label="外貌" content={selected.appearance || '未填写'} />
-              <InfoBlock label="背景" content={selected.background || '未填写'} />
-              <InfoBlock label="表面性格" content={selected.personality.surface || '未填写'} />
-              <InfoBlock label="内心性格" content={selected.personality.inner || '未填写'} />
-              <InfoBlock label="应激反应" content={selected.personality.stressResponse || '未填写'} />
-              <InfoBlock label="目标" content={selected.goals || '未填写'} />
+              {isEditing ? (
+                <>
+                  <EditBlock label="外貌" value={editForm.appearance || ''} onChange={(v) => setEditForm((f) => ({ ...f, appearance: v }))} />
+                  <EditBlock label="背景" value={editForm.background || ''} onChange={(v) => setEditForm((f) => ({ ...f, background: v }))} />
+                  <EditBlock label="表面性格" value={editForm.personality?.surface || ''} onChange={(v) => setEditForm((f) => ({ ...f, personality: { ...f.personality, surface: v } }))} />
+                  <EditBlock label="内心性格" value={editForm.personality?.inner || ''} onChange={(v) => setEditForm((f) => ({ ...f, personality: { ...f.personality, inner: v } }))} />
+                  <EditBlock label="应激反应" value={editForm.personality?.stressResponse || ''} onChange={(v) => setEditForm((f) => ({ ...f, personality: { ...f.personality, stressResponse: v } }))} />
+                  <EditBlock label="目标" value={editForm.goals || ''} onChange={(v) => setEditForm((f) => ({ ...f, goals: v }))} />
+                </>
+              ) : (
+                <>
+                  <InfoBlock label="外貌" content={selected.appearance || '未填写'} />
+                  <InfoBlock label="背景" content={selected.background || '未填写'} />
+                  <InfoBlock label="表面性格" content={selected.personality.surface || '未填写'} />
+                  <InfoBlock label="内心性格" content={selected.personality.inner || '未填写'} />
+                  <InfoBlock label="应激反应" content={selected.personality.stressResponse || '未填写'} />
+                  <InfoBlock label="目标" content={selected.goals || '未填写'} />
+                </>
+              )}
             </div>
 
             {selected.quotes.length > 0 && (
@@ -188,6 +269,20 @@ function InfoBlock({ label, content }: { label: string; content: string }) {
     <div className="bg-neutral-50 rounded-lg p-3">
       <p className="text-xs font-medium text-neutral-500 mb-1">{label}</p>
       <p className="text-sm text-neutral-800">{content}</p>
+    </div>
+  )
+}
+
+function EditBlock({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="bg-neutral-50 rounded-lg p-3">
+      <p className="text-xs font-medium text-neutral-500 mb-1">{label}</p>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full text-sm text-neutral-800 bg-transparent outline-none resize-none h-16"
+        placeholder={`填写${label}...`}
+      />
     </div>
   )
 }

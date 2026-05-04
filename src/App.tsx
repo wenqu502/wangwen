@@ -3,20 +3,26 @@ import { useAppStore } from '@/stores/app-store'
 import { useInitData } from '@/hooks/use-init-data'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { LoadingFallback } from '@/components/LoadingFallback'
+import { SettingsModal } from '@/components/settings/SettingsModal'
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { exportWork } from '@/lib/export'
+import { SearchModal } from '@/components/search/SearchModal'
 
 const CharacterCanvas = lazy(() => import('@/modules/character/CharacterCanvas').then(m => ({ default: m.CharacterCanvas })))
 const PlotCanvas = lazy(() => import('@/modules/plot/PlotCanvas').then(m => ({ default: m.PlotCanvas })))
 const RelationCanvas = lazy(() => import('@/modules/relation/RelationCanvas').then(m => ({ default: m.RelationCanvas })))
 const SystemCanvas = lazy(() => import('@/modules/system/SystemCanvas').then(m => ({ default: m.SystemCanvas })))
 const IdeaCanvas = lazy(() => import('@/modules/idea/IdeaCanvas').then(m => ({ default: m.IdeaCanvas })))
+const ReportCanvas = lazy(() => import('@/modules/report/ReportCanvas').then(m => ({ default: m.ReportCanvas })))
 import {
   Users,
   GitBranch,
   Network,
   Layers,
   Lightbulb,
+  FileCheck,
   PanelRightClose,
   PanelRightOpen,
   Search,
@@ -32,6 +38,7 @@ const TABS = [
   { id: 'relation' as const, label: '关系', icon: Network },
   { id: 'system' as const, label: '体系', icon: Layers },
   { id: 'idea' as const, label: '灵感', icon: Lightbulb },
+  { id: 'report' as const, label: '校验报告', icon: FileCheck },
 ]
 
 const TAB_COMPONENTS = {
@@ -40,6 +47,7 @@ const TAB_COMPONENTS = {
   relation: RelationCanvas,
   system: SystemCanvas,
   idea: IdeaCanvas,
+  report: ReportCanvas,
 } as const
 
 function App() {
@@ -52,6 +60,22 @@ function App() {
   } = useAppStore()
 
   const isReady = useInitData(currentWorkId)
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExport = useCallback(async () => {
+    if (!currentWorkId || isExporting) return
+    setIsExporting(true)
+    try {
+      await exportWork(currentWorkId)
+    } catch (err) {
+      console.error('导出失败', err)
+    } finally {
+      setIsExporting(false)
+    }
+  }, [currentWorkId, isExporting])
 
   const ActiveCanvas = TAB_COMPONENTS[currentTab]
 
@@ -85,15 +109,25 @@ function App() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors">
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
+          >
             <Search className="w-4 h-4" />
             <span>搜索</span>
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors">
-            <Download className="w-4 h-4" />
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors disabled:opacity-50"
+          >
+            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             <span>导出</span>
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
+          >
             <Settings className="w-4 h-4" />
             <span>设置</span>
           </button>
@@ -159,6 +193,10 @@ function App() {
           </aside>
         )}
       </div>
+
+      {/* 全局弹窗 */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </div>
   )
 }

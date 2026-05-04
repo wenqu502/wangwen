@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAppStore } from '@/stores/app-store'
-import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react'
+import { Send, Bot, User, Loader2, Sparkles, Users, GitBranch, Network, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { handleStreamingResponse } from '@/ai/streaming'
 import { createSystemPrompt } from '@/ai/client'
@@ -187,6 +187,23 @@ export function ChatPanel() {
         )}
       </div>
 
+      {/* 快捷指令 */}
+      <div className="px-3 pt-2 pb-1 flex flex-wrap gap-1.5 border-t border-neutral-100 shrink-0">
+        {QUICK_COMMANDS.map((cmd) => {
+          const Icon = cmd.icon
+          return (
+            <button
+              key={cmd.id}
+              onClick={() => setInput(cmd.text)}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] text-neutral-600 bg-neutral-50 hover:bg-indigo-50 hover:text-indigo-600 border border-neutral-200 rounded-md transition-colors"
+            >
+              <Icon className="w-3 h-3" />
+              <span>{cmd.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
       {/* 输入框 */}
       <div className="p-3 border-t border-neutral-200 shrink-0">
         <div className="flex items-end gap-2 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 focus-within:border-indigo-300 focus-within:ring-1 focus-within:ring-indigo-300 transition-all">
@@ -201,6 +218,7 @@ export function ChatPanel() {
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
+            aria-label="发送"
             className={cn(
               'p-1.5 rounded-lg transition-colors shrink-0',
               input.trim() && !isLoading
@@ -218,3 +236,10 @@ export function ChatPanel() {
     </div>
   )
 }
+
+const QUICK_COMMANDS = [
+  { id: 'char', label: '生成角色', text: '帮我创建一个新角色', icon: Users },
+  { id: 'plot', label: '续写剧情', text: '帮我规划一段剧情', icon: GitBranch },
+  { id: 'rel', label: '梳理关系', text: '根据现有角色梳理人物关系', icon: Network },
+  { id: 'sys', label: '设计体系', text: '帮我设计一个世界观体系', icon: Layers },
+]
