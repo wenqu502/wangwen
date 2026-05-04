@@ -1,4 +1,5 @@
 import { useSystemStore, useSystemList } from './store'
+import { useAppStore } from '@/stores/app-store'
 import { Layers, Plus, Trash2, ChevronDown, ChevronRight, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -7,6 +8,7 @@ import { generateSystemId } from '@/utils/id-generator'
 export function SystemCanvas() {
   const systemList = useSystemList()
   const { addSystem, deleteSystem } = useSystemStore()
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const toggleExpand = (id: string) => {
@@ -22,7 +24,7 @@ export function SystemCanvas() {
     const id = generateSystemId()
     addSystem({
       id,
-      workId: 'default',
+      workId: currentWorkId || 'default',
       name: '新体系',
       description: '点击编辑体系描述...',
       branches: [

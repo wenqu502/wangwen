@@ -1,5 +1,6 @@
 import { useRelationStore, useRelationEdgeList } from './store'
 import { useCharacterStore, useCharacterList } from '@/modules/character/store'
+import { useAppStore } from '@/stores/app-store'
 import { Network, Plus, Trash2, Eye, EyeOff, List, Share2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -18,6 +19,7 @@ export function RelationCanvas() {
   const characterList = useCharacterList()
   const { addEdge, deleteEdge } = useRelationStore()
   const { characters } = useCharacterStore()
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
 
   const [showHidden, setShowHidden] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list')
@@ -36,7 +38,7 @@ export function RelationCanvas() {
     if (!newRelation.sourceId || !newRelation.targetId) return
     addEdge({
       id: generateRelationId(),
-      workId: 'default',
+      workId: currentWorkId || 'default',
       sourceId: newRelation.sourceId,
       targetId: newRelation.targetId,
       type: newRelation.type,

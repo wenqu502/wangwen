@@ -84,10 +84,44 @@ export function createSystemPrompt(base: string, context: string): AIChatMessage
   }
 }
 
+// === 模块化的系统提示词构建 ===
+import { CHARACTER_SYSTEM_PROMPT } from '@/modules/character/ai-prompts'
+import { PLOT_SYSTEM_PROMPT } from '@/modules/plot/ai-prompts'
+import { SYSTEM_SYSTEM_PROMPT } from '@/modules/system/ai-prompts'
+
+const BASE_SYSTEM_PROMPT = `
+你是织文 (WangWen) 的 AI 创作助手，专门协助网文作者进行创作。
+你可以帮助用户创建角色、规划剧情、梳理人物关系、设计世界观体系、记录灵感等。
+当用户提出创作需求时，直接调用对应的工具完成操作，不要只返回文本描述。
+` as const
+
+export function buildSystemPrompt(currentTab?: string): AIChatMessage {
+  let modulePrompt = ''
+  switch (currentTab) {
+    case 'character':
+      modulePrompt = CHARACTER_SYSTEM_PROMPT
+      break
+    case 'plot':
+      modulePrompt = PLOT_SYSTEM_PROMPT
+      break
+    case 'system':
+      modulePrompt = SYSTEM_SYSTEM_PROMPT
+      break
+    default:
+      modulePrompt = ''
+  }
+
+  const content = modulePrompt
+    ? `${BASE_SYSTEM_PROMPT}\n\n---\n\n${modulePrompt}\n\n---\n\n当前暂无作品上下文。`
+    : `${BASE_SYSTEM_PROMPT}\n\n---\n\n当前暂无作品上下文。`
+
+  return { role: 'system', content }
+}
+
 // === Mock / Demo Mode ===
 // 当没有配置 API Key 时，进入演示模式，模拟 AI 响应以便体验完整交互流程
 
-const MOCK_DELAY_MS = 30
+const MOCK_DELAY_MS = 10
 
 export function isMockMode(): boolean {
   return !hasApiKey()
@@ -169,113 +203,349 @@ interface MockResponse {
   toolCall?: { name: string; args: Record<string, unknown> }
 }
 
+// === 参数化 Mock 数据生成器 ===
+// 根据用户输入动态生成内容，避免每次硬编码相同数据
+
+const NAME_POOLS = {
+  ancient: {
+    family: ['林', '苏', '沈', '顾', '楚', '萧', '陆', '谢', '慕容', '欧阳'],
+    given: ['云', '瑶', '轩', '瑾', '澈', '婉', '辞', '衍', '笙', '烬', '离', '染'],
+    aliases: (name: string) => [`${name}儿`, `${name[0]}哥`, `${name}君`],
+  },
+  modern: {
+    family: ['陈', '周', '吴', '郑', '王', '李', '张', '刘', '赵', '孙'],
+    given: ['晓', '雨', '晨', '浩', '思', '诺', '然', '泽', '悦', '航'],
+    aliases: (name: string) => [`小${name[0]}`, `${name}仔`, `${name}宝`],
+  },
+  scifi: {
+    family: ['K', 'A', 'X', 'R', 'N', 'V', 'L', 'M', 'S', 'T'],
+    given: ['-7', '-9', 'ra', 'on', 'ix', 'ne', 'ar', 'el', 'or', 'an'],
+    aliases: (name: string) => [`Unit ${name}`, `Subject ${name[0]}`, name],
+  },
+  fantasy: {
+    family: ['艾尔', '赛尔', '卡', '维', '洛', '菲', '奥', '雷', '米', '达'],
+    given: ['文', '娜', '斯', '娅', '恩', '特', '拉', '德', '尔', '斯'],
+    aliases: (name: string) => [`${name}大人`, `${name}爵士`, `小${name}`],
+  },
+}
+
+const APPEARANCE_POOLS = {
+  ancient: [
+    '一袭青衫，腰间悬着一柄古朴长剑。眉眼间藏着化不开的霜意。',
+    '红衣如火，发间一支金步摇。眼角一颗泪痣，笑起来有酒窝。',
+    '白衣胜雪，手持折扇。眉目温润如玉，却带着几分疏离。',
+    '玄衣黑袍，肩披墨色大氅。双眸深邃如夜，不怒自威。',
+  ],
+  modern: [
+    '白衬衫配深色西裤，腕上一块简约手表。短发干净利落，目光专注。',
+    'oversize卫衣配牛仔裤，头戴棒球帽。笑起来眼睛弯成月牙。',
+    '一身剪裁利落的西装，金丝眼镜。举止优雅，说话不紧不慢。',
+    '格子衬衫配双肩包，T恤上印着一行代码。眼神里总带着思考的光。',
+  ],
+  scifi: [
+    '银白色仿生皮肤下隐约可见蓝色能量纹路。瞳孔是机械般的淡金色。',
+    '穿着纳米材料编织的紧身战斗服，背后有微型推进器的轮廓。',
+    '左臂是义肢，金属关节在灯光下泛着冷光。其余部分和人类无异。',
+    '全身笼罩在能量护盾的微光中，头发因为静电微微飘起。',
+  ],
+  fantasy: [
+    '尖耳微微露出兜帽，手中握着一根镶嵌宝石的法杖。',
+    '身材魁梧，铠甲上刻满符文。腰间别着一把几乎和人一样高的巨剑。',
+    '背后一对半透明翅膀，皮肤泛着珍珠般的光泽。赤脚走在地上却不染尘埃。',
+    '全身被黑色斗篷覆盖，只露出一双猩红的眼睛和苍白的下巴。',
+  ],
+}
+
+const BACKGROUND_POOLS = {
+  ancient: [
+    '出身于没落的剑修世家，自幼与妹妹相依为命。妹妹在十年前的一场宗门争斗中被仇家杀害，从此踏上复仇之路。',
+    '本是名门正派的掌门独女，因一次下山历练误入魔道遗迹，体内被种下魔种，正邪两道都不容她。',
+    '孤儿出身，被隐世高人收养。从小在山中修行，对外界一无所知，直到师父去世才下山。',
+    '表面是京城第一纨绔，实则是先帝遗孤。为了躲避追杀，只能装疯卖傻。',
+  ],
+  modern: [
+    '从小在孤儿院长大，靠奖学金一路读到顶尖大学的计算机系。骨子里不服输，对认定的事极度执着。',
+    '含着金汤匙出生的富二代，却在十八岁那年家族破产。一夜之间从云端跌落，尝尽人情冷暖。',
+    '普通小镇做题家，靠高考改变命运的典型。在大城市里迷茫又倔强地活着。',
+    '退役电竞选手，拿过世界冠军。因为手伤被迫退役，现在在一家网咖当店长。',
+  ],
+  scifi: [
+    '出生在殖民星球的贫民窟，靠捡垃圾和走私维生。十六岁那年偷渡到主星，靠黑市格斗攒下第一桶金。',
+    '原本是星际舰队的精英飞行员，在一次虫族遭遇战中全队覆没，她是唯一的幸存者。',
+    '培养舱中诞生的基因改造人，编号A-7749。在实验室被摧毁后逃出，第一次呼吸到自由的空气。',
+    '从小就能听到"低语"——一种来自高维空间的信息流。被当作疯子关进精神病院，直到某天低语变成了求救信号。',
+  ],
+  fantasy: [
+    '人类与精灵的混血，在两个世界都没有容身之处。从小在边境的流浪商队中长大。',
+    '曾是最强大的龙骑士，却在屠龙战争中失去了自己的龙。现在酗酒度日，靠讲过去的故事换酒钱。',
+    '出身贫寒的农家女，某天在森林里捡到了一本古老的魔法书。没有老师，只能自己摸索。',
+    '死过一次的人。被死灵法师复活后保留了生前的记忆，但身体已经不需要呼吸和睡眠。',
+  ],
+}
+
+const PERSONALITY_KEYWORDS = [
+  ['沉稳', '偏执', '隐忍', '深情'],
+  ['活泼', '莽撞', '善良', '冲动'],
+  ['冷漠', '精明', '多疑', '孤独'],
+  ['温柔', '犹豫', '体贴', '自卑'],
+  ['狂妄', '天才', '自负', '脆弱'],
+  ['正直', '固执', '理想主义', '倔强'],
+]
+
+const ARC_POOL = [
+  '从封闭自我 → 学会信任伙伴 → 放下执念 → 超越仇恨',
+  '从天真无知 → 见识黑暗 → 迷失方向 → 找回初心',
+  '从随波逐流 → 觉醒自我 → 对抗命运 → 创造新秩序',
+  '从巅峰跌落 → 坠入谷底 → 重新站起 → 超越从前',
+]
+
+const SYSTEM_POOLS = {
+  ancient: {
+    names: ['九天剑诀', '玄火心法', '冰心诀', '万象真经', '太虚剑意'],
+    branches: ['剑气境', '心法境', '身法境'],
+    levels: ['初窥', '入微', '通玄', '大成', '圆满'],
+    abilities: ['剑气外放', '御剑飞行', '神识锁定', '剑气化形', '虚空斩'],
+  },
+  magic: {
+    names: ['元素共鸣', '奥术编织', '星象魔法', '血契之术', '死灵秘典'],
+    branches: ['火系', '水系', '风系', '土系'],
+    levels: ['学徒', '法师', '大法师', '贤者', '宗师'],
+    abilities: ['火球术', '冰盾', '瞬移', '元素化身', '时间停滞'],
+  },
+  scifi: {
+    names: ['灵能觉醒', '量子共振', '基因解锁', '神经网络', '维度跃迁'],
+    branches: ['感知系', '战斗系', '辅助系'],
+    levels: ['D级', 'C级', 'B级', 'A级', 'S级'],
+    abilities: ['心灵感应', '念力操控', '预知', '空间跳跃', '能量护盾'],
+  },
+}
+
+function hashString(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash + char) | 0
+  }
+  return Math.abs(hash)
+}
+
+function pickFromPool<T>(pool: T[], seed: number): T {
+  return pool[seed % pool.length]
+}
+
+function detectStyle(text: string): keyof typeof NAME_POOLS {
+  const t = text.toLowerCase()
+  if (t.includes('科幻') || t.includes('未来') || t.includes('星际') || t.includes('机甲') || t.includes('cyber')) return 'scifi'
+  if (t.includes('西幻') || t.includes('魔法') || t.includes('龙') || t.includes('精灵') || t.includes('魔兽')) return 'fantasy'
+  if (t.includes('现代') || t.includes('都市') || t.includes('校园') || t.includes('职场')) return 'modern'
+  return 'ancient'
+}
+
+function generateCharacter(text: string) {
+  const style = detectStyle(text)
+  const seed = hashString(text)
+  const pool = NAME_POOLS[style]
+  const family = pickFromPool(pool.family, seed)
+  const given = pickFromPool(pool.given, seed + 1)
+  const name = family + given
+  const aliases = [pickFromPool(pool.aliases(name), seed + 2)]
+
+  const appPool = APPEARANCE_POOLS[style]
+  const appearance = pickFromPool(appPool, seed + 3)
+
+  const bgPool = BACKGROUND_POOLS[style]
+  const background = pickFromPool(bgPool, seed + 4)
+
+  const keywords = pickFromPool(PERSONALITY_KEYWORDS, seed + 5)
+  const arc = pickFromPool(ARC_POOL, seed + 6)
+
+  const traitSurfaces: Record<string, string> = {
+    '沉稳': '寡言少语，对人不冷不热，独来独往',
+    '活泼': '话多，喜欢热闹，总是第一个冲在前面',
+    '冷漠': '对大多数人和事都不关心，极少露出表情',
+    '温柔': '说话轻声细语，总是优先考虑别人的感受',
+    '狂妄': '目中无人，喜欢嘲讽对手，但确实有实力',
+    '正直': '眼里容不得沙子，遇到不公一定会出头',
+  }
+  const traitInners: Record<string, string> = {
+    '沉稳': '内心深处极度渴望被理解，只是不知如何表达',
+    '偏执': '认定的事绝不回头，哪怕全世界都反对',
+    '隐忍': '习惯把痛苦咽下去，不愿让任何人看到脆弱',
+    '深情': '一旦付出真心就毫无保留，哪怕最后伤痕累累',
+    '孤独': '害怕再次失去，所以干脆不再拥有',
+    '自卑': '表面上的自信全是装的，内心总觉得自己不够好',
+  }
+
+  const mainTrait = keywords[0]
+  const innerTrait = keywords[2] || keywords[1]
+
+  return {
+    text: `好的，我为您创建了一个${style === 'ancient' ? '古风' : style === 'modern' ? '现代' : style === 'scifi' ? '科幻' : '西幻'}风格的角色「${name}」。这个角色将作为演示数据展示在左侧画布中。`,
+    toolCall: {
+      name: 'createCharacter',
+      args: {
+        name,
+        aliases,
+        tags: [style === 'ancient' ? '剑修' : style === 'modern' ? '都市' : style === 'scifi' ? '改造人' : '法师', keywords[0], keywords[1]],
+        appearance,
+        personality: {
+          keywords,
+          surface: traitSurfaces[mainTrait] || '性格复杂，难以用一两句话概括',
+          inner: traitInners[innerTrait] || '内心深处有不为人知的秘密',
+          stressResponse: '在极端压力下会暴露出最真实的自己',
+        },
+        background,
+        trauma: background.split('。')[0] + '。',
+        goals: '找到属于自己的道路',
+        arc,
+        quotes: [`这就是${name}的选择。`, '无论如何，我不会后悔。'],
+        abilities: style === 'ancient' ? ['九天剑诀', '冰心诀'] : style === 'magic' ? ['火球术', '元素护盾'] : style === 'scifi' ? ['灵能感知', '神经加速'] : ['基础魔法', '冥想'],
+      },
+    },
+  }
+}
+
+function generatePlotNode(text: string) {
+  const seed = hashString(text)
+  const titles = [
+    '第一章：血染山门',
+    '第一章：意外觉醒',
+    '第一章：破碎的平静',
+    '序章：最后的黄昏',
+    '第一章：陌生的天花板',
+    '第一章：命运的齿轮',
+  ]
+  const summaries = [
+    '主角回到故乡，发现昔日家园已成废墟。在废墟中，他找到了重要之人留下的信物，确认了仇家的身份线索。',
+    '一个平常的日子被突如其来的变故打破。主角在混乱中发现自己拥有了不可思议的能力，却不知这能力是福是祸。',
+    '平静的生活被一封神秘来信打破。信中没有署名，只有一个时间和地点，以及一句警告：不要相信他。',
+    '故事从一个雨夜开始。主角在逃亡中遇到了改变他一生的人，而那个人带来的不是救赎，而是更大的谜团。',
+    '主角从昏迷中醒来，发现自己身处一个陌生的地方。周围的人都认识他，但他对这里没有任何记忆。',
+    '一个看似简单的委托任务，却牵扯出背后庞大的阴谋。主角本想置身事外，却发现早已深陷其中。',
+  ]
+  const types = ['trunk', 'trunk', 'branch', 'trunk']
+  const title = pickFromPool(titles, seed)
+  const summary = pickFromPool(summaries, seed + 1)
+  const type = pickFromPool(types, seed + 2)
+
+  return {
+    text: `已为您生成剧情节点「${title}」，您可以在左侧的剧情分支树中查看。`,
+    toolCall: {
+      name: 'createPlotNode',
+      args: {
+        title,
+        summary,
+        type,
+        tags: ['开篇', '主线'],
+      },
+    },
+  }
+}
+
+function generateSystem(text: string) {
+  const t = text.toLowerCase()
+  let category: keyof typeof SYSTEM_POOLS = 'ancient'
+  if (t.includes('魔法') || t.includes('法师') || t.includes('元素')) category = 'magic'
+  else if (t.includes('科幻') || t.includes('未来') || t.includes('星际') || t.includes('灵能')) category = 'scifi'
+
+  const seed = hashString(text)
+  const pool = SYSTEM_POOLS[category]
+  const name = pickFromPool(pool.names, seed)
+  const branchName = pickFromPool(pool.branches, seed + 1)
+
+  const levels = pool.levels.slice(0, 3).map((n, i) => ({
+    name: n,
+    description: `${branchName}第${i + 1}阶段，${pool.abilities[i]}开始显现`,
+    abilities: [pool.abilities[i]],
+    restrictions: i > 1 ? ['消耗大量能量'] : ['每日限用三次'],
+  }))
+
+  return {
+    text: `已为您设计一个${category === 'ancient' ? '修炼' : category === 'magic' ? '魔法' : '异能'}体系「${name}」。`,
+    toolCall: {
+      name: 'createSystem',
+      args: {
+        name,
+        description: `上古传承，共分${pool.levels.length}重境界`,
+        branches: [{ name: branchName, levels }],
+        rules: [
+          { description: '每突破一重需经历心魔试炼', severity: 'hard', exceptions: ['持特殊心法可豁免'] },
+          { description: '修炼时不可分心，否则容易走火入魔', severity: 'soft', exceptions: ['心性坚定者可免疫'] },
+        ],
+      },
+    },
+  }
+}
+
+function generateRelation(text: string) {
+  // 尝试从现有 store 中获取角色，让 mock 关系更真实
+  let sourceId = 'char_demo_1'
+  let targetId = 'char_demo_2'
+  let type = '仇敌'
+  let description = '两人之间有着不可调和的矛盾'
+
+  try {
+    const { useCharacterStore } = require('@/modules/character/store')
+    const chars = useCharacterStore.getState().characters
+    const ids = Object.keys(chars)
+    if (ids.length >= 2) {
+      sourceId = ids[0]
+      targetId = ids[1]
+      type = '关联'
+      description = `${chars[sourceId].name} 与 ${chars[targetId].name} 之间存在着复杂的关系`
+    } else if (ids.length === 1) {
+      sourceId = ids[0]
+      targetId = ids[0]
+      type = '自我'
+      description = `${chars[sourceId].name} 内心的矛盾与挣扎`
+    }
+  } catch {
+    // store 未加载时使用默认值
+  }
+
+  return {
+    text: `我来为您创建一段人物关系。${description}。`,
+    toolCall: {
+      name: 'createRelation',
+      args: { sourceId, targetId, type, description, isHidden: false },
+    },
+  }
+}
+
+function generateIdea(text: string) {
+  const content = text.replace(/记录|灵感|点子|想法/g, '').trim() || '一个新的创作灵感'
+  return {
+    text: '已记录您的灵感便签！',
+    toolCall: {
+      name: 'createIdea',
+      args: { content, tags: ['剧情', '待处理'] },
+    },
+  }
+}
+
 function matchMockResponse(userText: string): MockResponse {
   const t = userText.toLowerCase()
 
-  // 角色相关
   if (t.includes('角色') || t.includes('人物') || t.includes('创建') || t.includes('生成')) {
-    return {
-      text: '好的，我来为您创建一个角色。这个角色将作为演示数据展示在左侧画布中。',
-      toolCall: {
-        name: 'createCharacter',
-        args: {
-          name: '林云',
-          aliases: ['云哥'],
-          tags: ['男主', '剑修', '复仇者'],
-          appearance: '一袭青衫，腰间悬着一柄古朴长剑。眉眼间藏着化不开的霜意，唯有看向远方时，眼底会闪过一丝不易察觉的温柔。',
-          personality: {
-            keywords: ['沉稳', '偏执', '隐忍', '深情'],
-            surface: '寡言少语，对人不冷不热，独来独往',
-            inner: '因妹妹之死背负巨大愧疚，内心深处极度渴望被理解',
-            stressResponse: '情绪压抑到极点时会失控拔剑',
-          },
-          background: '出身于没落的剑修世家，自幼与妹妹相依为命。妹妹在十年前的一场宗门争斗中被仇家杀害，从此他踏上复仇之路。',
-          trauma: '妹妹死在自己面前，却无力保护',
-          goals: '找到幕后真凶，为妹妹报仇',
-          arc: '从封闭自我 → 学会信任伙伴 → 放下执念 → 超越仇恨',
-          quotes: ['剑不饮血，何以安魂。', '我这条命，早就不是自己的了。'],
-          abilities: ['九天剑诀', '冰心诀', '御剑飞行'],
-        },
-      },
-    }
+    return generateCharacter(userText)
   }
 
-  // 剧情相关
   if (t.includes('剧情') || t.includes('节点') || t.includes('规划') || t.includes('大纲')) {
-    return {
-      text: '已为您生成一个剧情节点，您可以在左侧的剧情分支树中查看。',
-      toolCall: {
-        name: 'createPlotNode',
-        args: {
-          title: '第一章：血染山门',
-          summary: '林云回到故乡，发现昔日山门已成废墟。在废墟中，他找到了妹妹留下的半块玉佩，确认了仇家的身份线索。',
-          type: 'trunk',
-          tags: ['开篇', '复仇线'],
-        },
-      },
-    }
+    return generatePlotNode(userText)
   }
 
-  // 关系相关
   if (t.includes('关系') || t.includes('梳理') || t.includes('人际')) {
-    return {
-      text: '我来为您创建一段人物关系。注意：创建关系需要先选择已存在的角色。',
-      toolCall: {
-        name: 'createRelation',
-        args: {
-          sourceId: 'char_demo_1',
-          targetId: 'char_demo_2',
-          type: '仇敌',
-          description: '杀妹之仇，不共戴天',
-          isHidden: false,
-        },
-      },
-    }
+    return generateRelation(userText)
   }
 
-  // 体系相关
   if (t.includes('体系') || t.includes('等级') || t.includes('境界') || t.includes('魔法') || t.includes('修炼')) {
-    return {
-      text: '已为您设计一个修炼体系，包含主分支和等级划分。',
-      toolCall: {
-        name: 'createSystem',
-        args: {
-          name: '九天剑诀',
-          description: '上古剑修传承，共分九重境界',
-          branches: [
-            {
-              name: '剑气境',
-              levels: [
-                { name: '初窥', description: '感知天地灵气，凝练第一道剑气', abilities: ['基础剑气释放'], restrictions: ['每日限用三次'] },
-                { name: '入微', description: '剑气入微，可斩断精铁', abilities: ['剑气外放', '御剑护身'], restrictions: [] },
-                { name: '通玄', description: '剑气通玄，可伤神魂', abilities: ['剑气化形', '神识锁定'], restrictions: ['消耗大量灵力'] },
-              ],
-            },
-          ],
-          rules: [
-            { description: '每突破一重需经历心魔试炼', severity: 'hard', exceptions: ['持特殊心法可豁免'] },
-            { description: '剑修不可近女色，否则剑心不稳', severity: 'soft', exceptions: ['真情可破'] },
-          ],
-        },
-      },
-    }
+    return generateSystem(userText)
   }
 
-  // 灵感相关
   if (t.includes('灵感') || t.includes('点子') || t.includes('想法') || t.includes('记录')) {
-    return {
-      text: '已记录您的灵感便签！',
-      toolCall: {
-        name: 'createIdea',
-        args: {
-          content: userText.replace(/记录|灵感|点子/g, '').trim() || '一个新的创作灵感',
-          tags: ['剧情', '待处理'],
-        },
-      },
-    }
+    return generateIdea(userText)
   }
 
-  // 默认回复
   return {
     text: '收到！我是织文的 AI 创作助手。您可以让我帮您：\n\n1. **创建角色** — 说"帮我创建一个剑修男主"\n2. **规划剧情** — 说"帮我写一个复仇主线"\n3. **梳理关系** — 说"根据现有角色梳理关系"\n4. **设计体系** — 说"帮我设计一个修炼体系"\n5. **记录灵感** — 随口提到的好点子我会自动提取\n\n当前处于 **演示模式**（无 API Key），所有数据仅存储在本地浏览器中。',
   }

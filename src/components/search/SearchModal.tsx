@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Search, Users, GitBranch, Network, Layers, Lightbulb, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { db } from '@/db'
 import { useAppStore } from '@/stores/app-store'
+import { useDebounce } from '@/hooks/use-debounce'
 import type { Character, PlotNode, RelationEdge, WorkSystem, Idea } from '@/types'
 
 interface SearchModalProps {
@@ -20,9 +20,10 @@ type SearchResultItem = {
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResultItem[]>([])
+  const debouncedQuery = useDebounce(query, 250)
+  const [results, setResults] = useStateState<SearchResultItem[]>([])
   const [loading, setLoading] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRefRef<HTMLInputElement>(null)
   const currentWorkId = useAppStore((s) => s.currentWorkId)
   const setCurrentTab = useAppStore((s) => s.setCurrentTab)
 
@@ -36,12 +37,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   }, [isOpen])
 
   useEffect(() => {
-    if (!query.trim() || !currentWorkId) {
+    if (!debouncedQuery.trim() || !currentWorkId) {
       setResults([])
+      setLoading(false)
       return
     }
 
-    const q = query.toLowerCase()
+    const q = debouncedQuery.toLowerCase()
     let cancelled = false
 
     setLoading(true)
@@ -56,13 +58,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       const items: SearchResultItem[] = []
 
       chars.forEach((c: Character) => {
-        if (c.name.toLowerCase().includes(q) || (c.alias || []).some((a) => a.toLowerCase().includes(q))) {
-          items.push({ type: 'character', id: c.id, title: c.name, subtitle: c.role || '角色', icon: Users })
+        if (c.name.toLowerCase().includes(q) || (c.aliases || []).some((a: string) => a.toLowerCase().includes(q))) {
+          items.push({ type: 'character', id: c.id, title: c.name, subtitle: c.appearance?.slice(0, 20) || '角色', icon: Users })
         }
       })
       plots.forEach((p: PlotNode) => {
         if (p.title.toLowerCase().includes(q) || (p.summary || '').toLowerCase().includes(q)) {
-          items.push({ type: 'plot', id: p.id, title: p.title, subtitle: p.chapter || '剧情节点', icon: GitBranch })
+          items.push({ type: 'plot', id: p.id, title: p.title, subtitle: p.summary?.slice(0, 20) || '剧情节点', icon: GitBranch })
         }
       })
       rels.forEach((r: RelationEdge) => {
@@ -77,7 +79,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         }
       })
       ideas.forEach((i: Idea) => {
-        if (i.content.toLowerCase().includes(q) || (i.tags || []).some((t) => t.toLowerCase().includes(q))) {
+        if (i.content.toLowerCase().includes(q) || (i.tags || []).some((t: string) => t.toLowerCase().includes(q))) {
           items.push({ type: 'idea', id: i.id, title: i.content.slice(0, 30), subtitle: '灵感', icon: Lightbulb })
         }
       })
@@ -87,7 +89,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     })
 
     return () => { cancelled = true }
-  }, [query, currentWorkId])
+  }, [debouncedQuery, currentWorkId])
 
   const handleSelect = (item: SearchResultItem) => {
     const tabMap: Record<string, typeof item.type> = {

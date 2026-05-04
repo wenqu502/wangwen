@@ -22,29 +22,51 @@ class WangWenDB extends Dexie {
       ideas: 'id, workId, [workId+status]',
     })
 
-    // === v2: 索引优化 + 角色状态字段 (预留) ===
-    // this.version(2)
-    //   .stores({
-    //     characters: 'id, [workId+name], [workId+status], createdAt',
-    //     relations: 'id, [workId+sourceId], [workId+targetId], createdAt',
-    //   })
-    //   .upgrade((tx) => {
-    //     return tx.table('characters').toCollection().modify((char) => {
-    //       char.status = char.status || 'alive'
-    //       char.powerLevel = char.powerLevel || 0
-    //     })
-    //   })
-
-    // === v3: 作品标签功能 (预留) ===
-    // this.version(3)
-    //   .stores({
-    //     works: 'id, name, *tags, createdAt',
-    //   })
-    //   .upgrade((tx) => {
-    //     return tx.table('works').toCollection().modify((work) => {
-    //       work.tags = work.tags || []
-    //     })
-    //   })
+    // === v2: 索引优化 + 缺失字段补全 ===
+    this.version(2)
+      .stores({
+        works: 'id, name, createdAt',
+        characters: 'id, workId, [workId+name], createdAt',
+        plotNodes: 'id, workId, [workId+status], createdAt',
+        relations: 'id, workId, [workId+sourceId], [workId+targetId], createdAt',
+        systems: 'id, workId, createdAt',
+        ideas: 'id, workId, [workId+status], createdAt',
+      })
+      .upgrade((tx) => {
+        // 补全可能缺失的字段，确保旧数据兼容
+        const tables = ['characters', 'plotNodes', 'relations', 'systems', 'ideas']
+        const mods = tables.map((tableName) => {
+          return tx.table(tableName).toCollection().modify((record: Record<string, unknown>) => {
+            if (!record.createdAt) record.createdAt = new Date().toISOString()
+            if (tableName !== 'ideas' && tableName !== 'relations' && !record.updatedAt) {
+              record.updatedAt = record.createdAt
+            }
+            if (tableName === 'characters') {
+              record.status = record.status || 'alive'
+              record.relations = record.relations || []
+              record.images = record.images || []
+            }
+            if (tableName === 'plotNodes') {
+              record.status = record.status || 'todo'
+              record.childIds = record.childIds || []
+              record.foreshadowing = record.foreshadowing || []
+              record.payoff = record.payoff || []
+            }
+            if (tableName === 'relations') {
+              record.isHidden = record.isHidden ?? false
+            }
+            if (tableName === 'systems') {
+              record.branches = record.branches || []
+              record.rules = record.rules || []
+            }
+            if (tableName === 'ideas') {
+              record.status = record.status || 'pending'
+              record.tags = record.tags || []
+            }
+          })
+        })
+        return Promise.all(mods)
+      })
   }
 }
 

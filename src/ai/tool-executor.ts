@@ -3,6 +3,7 @@ import { usePlotStore } from '@/modules/plot/store'
 import { useRelationStore } from '@/modules/relation/store'
 import { useSystemStore } from '@/modules/system/store'
 import { useIdeaStore } from '@/modules/idea/store'
+import { useAppStore } from '@/stores/app-store'
 import {
   generateCharacterId,
   generateNodeId,
@@ -11,6 +12,7 @@ import {
   generateIdeaId,
 } from '@/utils/id-generator'
 import type { Character, PlotNode, RelationEdge, WorkSystem, Idea } from '@/types'
+import { validateToolInput } from './schemas'
 
 export interface ToolCall {
   id: string
@@ -24,21 +26,32 @@ export interface ToolResult {
   data?: unknown
 }
 
+function getCurrentWorkId(): string {
+  return useAppStore.getState().currentWorkId || 'default'
+}
+
 export function executeTool(toolCall: ToolCall): ToolResult {
+  // 1. 运行时参数校验
+  const validation = validateToolInput(toolCall.name, toolCall.arguments)
+  if (!validation.success) {
+    return { success: false, message: validation.error }
+  }
+  const args = validation.data
+
   try {
     switch (toolCall.name) {
       case 'createCharacter':
-        return handleCreateCharacter(toolCall.arguments)
+        return handleCreateCharacter(args)
       case 'updateCharacter':
-        return handleUpdateCharacter(toolCall.arguments)
+        return handleUpdateCharacter(args)
       case 'createPlotNode':
-        return handleCreatePlotNode(toolCall.arguments)
+        return handleCreatePlotNode(args)
       case 'createRelation':
-        return handleCreateRelation(toolCall.arguments)
+        return handleCreateRelation(args)
       case 'createSystem':
-        return handleCreateSystem(toolCall.arguments)
+        return handleCreateSystem(args)
       case 'createIdea':
-        return handleCreateIdea(toolCall.arguments)
+        return handleCreateIdea(args)
       default:
         return {
           success: false,
@@ -60,7 +73,7 @@ function handleCreateCharacter(args: Record<string, unknown>): ToolResult {
 
   const character: Character = {
     id: generateCharacterId(),
-    workId: 'default',
+    workId: getCurrentWorkId(),
     name: String(args.name || '未命名角色'),
     aliases: Array.isArray(args.aliases) ? args.aliases.map(String) : [],
     tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
@@ -139,7 +152,7 @@ function handleCreatePlotNode(args: Record<string, unknown>): ToolResult {
 
   const node: PlotNode = {
     id: generateNodeId(),
-    workId: 'default',
+    workId: getCurrentWorkId(),
     title: String(args.title || '未命名节点'),
     summary: String(args.summary || ''),
     content: args.content ? String(args.content) : undefined,
@@ -179,7 +192,7 @@ function handleCreateRelation(args: Record<string, unknown>): ToolResult {
 
   const edge: RelationEdge = {
     id: generateRelationId(),
-    workId: 'default',
+    workId: getCurrentWorkId(),
     sourceId: String(args.sourceId || ''),
     targetId: String(args.targetId || ''),
     type: String(args.type || '关联'),
@@ -206,7 +219,7 @@ function handleCreateSystem(args: Record<string, unknown>): ToolResult {
 
   const system: WorkSystem = {
     id: generateSystemId(),
-    workId: 'default',
+    workId: getCurrentWorkId(),
     name: String(args.name || '未命名体系'),
     description: String(args.description || ''),
     branches: Array.isArray(args.branches)
@@ -264,7 +277,7 @@ function handleCreateIdea(args: Record<string, unknown>): ToolResult {
 
   const idea: Idea = {
     id: generateIdeaId(),
-    workId: 'default',
+    workId: getCurrentWorkId(),
     content: String(args.content || ''),
     tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
     status: 'pending',

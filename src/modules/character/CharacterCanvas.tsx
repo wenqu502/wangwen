@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useCharacterStore, useCharacterList, useSelectedCharacter, useSelectedCharacterId } from './store'
 import { useAppStore } from '@/stores/app-store'
-import { Plus, User, Trash2, Edit3, Sparkles, Check, X } from 'lucide-react'
+import { Plus, User, Trash2, Edit3, Sparkles, Check, X, Upload, Wand2, ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { generateCharacterId } from '@/utils/id-generator'
 import type { Character } from '@/types'
@@ -12,6 +12,7 @@ export function CharacterCanvas() {
   const selectedId = useSelectedCharacterId()
   const { selectCharacter, addCharacter, deleteCharacter, updateCharacter } = useCharacterStore()
   const { addMessage } = useAppStore()
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState<Partial<Character>>({})
 
@@ -19,7 +20,7 @@ export function CharacterCanvas() {
     const id = generateCharacterId()
     addCharacter({
       id,
-      workId: 'default',
+      workId: currentWorkId || 'default',
       name: `角色 ${characterList.length + 1}`,
       aliases: [],
       tags: ['待完善'],
@@ -118,9 +119,42 @@ export function CharacterCanvas() {
           <div className="bg-white rounded-xl border border-neutral-200 p-6 space-y-6">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold">
-                  {(isEditing ? editForm.name : selected.name)?.charAt(0)}
+                <div className="relative w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold overflow-hidden">
+                  {selected.images?.[0] ? (
+                    <img src={selected.images[0]} alt={selected.name} className="w-full h-full object-cover" />
+                  ) : (
+                    (isEditing ? editForm.name : selected.name)?.charAt(0)
+                  )}
+                  {isEditing && (
+                    <label className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer opacity-0 hover:opacity-100 transition-opacity">
+                      <Upload className="w-5 h-5 text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          const reader = new FileReader()
+                          reader.onload = () => {
+                            const dataUrl = reader.result as string
+                            setEditForm((f) => ({ ...f, images: [dataUrl] }))
+                          }
+                          reader.readAsDataURL(file)
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
+                {isEditing && (
+                  <button
+                    onClick={() => alert('AI 形象生成功能即将上线，敬请期待！')}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1 mt-1"
+                  >
+                    <Wand2 className="w-3 h-3" />
+                    AI 生成形象
+                  </button>
+                )}
                 <div>
                   {isEditing ? (
                     <input
@@ -136,7 +170,7 @@ export function CharacterCanvas() {
                     <input
                       value={(editForm.aliases || []).join(' / ')}
                       onChange={(e) =>
-                        setEditForm((f) => ({ ...f, aliases: e.target.value.split(/[\/，,]/).map((s) => s.trim()).filter(Boolean) }))
+                        setEditForm((f) => ({ ...f, aliases: e.target.value.split(/[\/,]/).map((s) => s.trim()).filter(Boolean) }))
                       }
                       className="text-sm text-neutral-500 border-b border-neutral-300 outline-none bg-transparent w-full mt-1"
                       placeholder="别名（用 / 分隔）"
@@ -172,6 +206,7 @@ export function CharacterCanvas() {
                           c.background = editForm.background ?? c.background
                           c.personality = { ...c.personality, ...(editForm.personality || {}) }
                           c.goals = editForm.goals ?? c.goals
+                          c.images = editForm.images ?? c.images
                           c.updatedAt = new Date().toISOString()
                         })
                         setIsEditing(false)

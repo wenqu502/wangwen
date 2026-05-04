@@ -4,12 +4,12 @@ import { sanitizeHtml } from '@/utils/sanitize'
 import { Send, Bot, User, Loader2, Sparkles, Users, GitBranch, Network, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { handleStreamingResponse } from '@/ai/streaming'
-import { createSystemPrompt } from '@/ai/client'
+import { buildSystemPrompt } from '@/ai/client'
 import { tools } from '@/ai/function-calling'
 import { executeTool } from '@/ai/tool-executor'
 
 export function ChatPanel() {
-  const { messages, addMessage, updateMessage, isLoading, setIsLoading } = useAppStore()
+  const { messages, addMessage, updateMessage, isLoading, setIsLoading, currentTab } = useAppStore()
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -44,10 +44,7 @@ export function ChatPanel() {
     })
 
     try {
-      const systemPrompt = createSystemPrompt(
-        '你是织文 (WangWen) 的 AI 创作助手，专门协助网文作者进行创作。你可以帮助用户创建角色、规划剧情、梳理人物关系、设计世界观体系、记录灵感等。',
-        '当前暂无作品上下文。'
-      )
+      const systemPrompt = buildSystemPrompt(currentTab)
 
       const result = await handleStreamingResponse(
         {

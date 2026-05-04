@@ -1,10 +1,12 @@
 import { useIdeaStore, useIdeaList, useIdeaCount } from './store'
+import { useAppStore } from '@/stores/app-store'
 import { Lightbulb, Plus } from 'lucide-react'
 
 export function IdeaCanvas() {
   const ideaList = useIdeaList()
   const ideaCount = useIdeaCount()
   const { addIdea, deleteIdea } = useIdeaStore()
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
 
   return (
     <div className="h-full flex flex-col">
@@ -15,7 +17,7 @@ export function IdeaCanvas() {
             const id = `idea_${Date.now()}`
             addIdea({
               id,
-              workId: 'default',
+              workId: currentWorkId || 'default',
               content: '新的灵感...',
               tags: [],
               status: 'pending',

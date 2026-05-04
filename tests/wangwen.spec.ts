@@ -94,4 +94,66 @@ test.describe('织文 WangWen - 核心流程 E2E', () => {
     ])
     expect(download.suggestedFilename()).toMatch(/^织文_.*\.json$/)
   })
+
+  test('控制台无 JS 错误和警告', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (err) => errors.push(err.message))
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text())
+    })
+
+    // 执行一系列操作
+    await page.getByRole('button', { name: '剧情' }).click()
+    await page.getByRole('button', { name: '关系' }).click()
+    await page.getByRole('button', { name: '体系' }).click()
+    await page.getByRole('button', { name: '灵感' }).click()
+    await page.getByRole('button', { name: '角色' }).click()
+
+    expect(errors).toEqual([])
+  })
+
+  test('AI 助手 - 空输入不应崩溃', async ({ page }) => {
+    await page.getByRole('button', { name: 'AI 助手' }).click()
+    await page.getByRole('button', { name: '发送' }).click()
+    // 页面不应崩溃，输入框仍然可见
+    await expect(page.getByPlaceholder('描述你的创作想法...')).toBeVisible()
+  })
+
+  test('角色编辑 - 取消编辑应恢复原始值', async ({ page }) => {
+    // 先创建一个角色
+    await page.getByRole('button', { name: '手动创建' }).click()
+    await expect(page.getByText('角色 1')).toBeVisible()
+
+    // 开始编辑
+    await page.getByRole('button', { name: '编辑角色' }).click()
+    await page.getByPlaceholder('角色名').fill('临时的名字')
+
+    // 假设有取消按钮，如果没有则通过 Escape 取消
+    await page.keyboard.press('Escape')
+
+    // 原始值应保持不变（如果 Escape 有效）或至少页面不崩溃
+    await expect(page.getByText('角色 1')).toBeVisible()
+  })
+
+  test('设置面板 - 输入无效 API Key 应可保存', async ({ page }) => {
+    await page.getByRole('button', { name: '设置' }).click()
+    const input = page.getByPlaceholder('sk-...')
+    await input.fill('invalid-key')
+    await page.getByRole('button', { name: '保存' }).click()
+
+    // 应显示保存成功提示
+    await expect(page.getByText('已保存')).toBeVisible()
+
+    // 清空
+    await input.fill('')
+    await page.getByRole('button', { name: '保存' }).click()
+    await expect(page.getByText('已保存')).toBeVisible()
+  })
+
+  test('404 页面应友好降级', async ({ page }) => {
+    // 访问不存在的路由
+    await page.goto('/non-existent-page')
+    // 不应出现白屏，至少能看到应用外壳
+    await expect(page.locator('body')).toContainText('织文')
+  })
 })

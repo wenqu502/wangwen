@@ -13,6 +13,7 @@ import {
   type NodeTypes,
 } from '@xyflow/react'
 import { usePlotStore, usePlotNodeList, useSelectedPlotNode } from './store'
+import { useAppStore } from '@/stores/app-store'
 import type { PlotNode } from '@/types'
 import { GitBranch, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -151,6 +152,7 @@ export function PlotCanvas() {
   const nodeList = usePlotNodeList()
   const selectedNode = useSelectedPlotNode()
   const { selectNode, addNode, deleteNode, updateNode } = usePlotStore()
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -216,7 +218,7 @@ export function PlotCanvas() {
     const id = generateNodeId()
     addNode({
       id,
-      workId: 'default',
+      workId: currentWorkId || 'default',
       title: `节点 ${nodeList.length + 1}`,
       summary: '点击编辑节点内容...',
       type: 'trunk',
@@ -231,7 +233,7 @@ export function PlotCanvas() {
       updatedAt: new Date().toISOString(),
     })
     selectNode(id)
-  }, [addNode, nodeList.length, selectNode])
+  }, [addNode, nodeList.length, selectNode, currentWorkId])
 
   const hasNodes = nodeList.length > 0
 
