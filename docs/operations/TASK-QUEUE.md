@@ -100,4 +100,12 @@
 > ---
 >
 > **总交付**: Phase 0~4 全部闭环完成
-> **待办**: eslint.config.js 平铺配置迁移（ESLint v9 兼容性）
+> **持续优化**: 2026-05-04 第二批
+>   - ESLint v9 平铺配置 ✅（0 errors, 20 warnings）
+>   - 暗色模式 localStorage 持久化 + 系统偏好检测 ✅
+>   - 全局键盘快捷键（Ctrl+K 搜索 / Ctrl+D 主题 / Ctrl+Shift+E 导出 / Esc 关闭）✅
+>   - 5 个 Canvas 组件 theme-aware 颜色适配 ✅
+>
+> ---
+>
+> **待办**: ReportCanvas 暗色适配 / React Flow / vis-network 图表暗色主题 / 快捷键提示浮层
