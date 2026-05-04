@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { useShallow } from 'zustand/shallow'
 import type { WorkSystem } from '@/types'
+import { db } from '@/db'
 
 interface SystemState {
   systems: Record<string, WorkSystem>
@@ -27,18 +29,23 @@ export const useSystemStore = create<SystemState>()(
     addSystem: (system) =>
       set((state) => {
         state.systems[system.id] = system
+        db.systems.add(system).catch((err) => console.error('[DB] addSystem failed:', err))
       }),
 
     updateSystem: (id, updater) =>
       set((state) => {
         const s = state.systems[id]
-        if (s) updater(s)
+        if (s) {
+          updater(s)
+          db.systems.put(s).catch((err) => console.error('[DB] updateSystem failed:', err))
+        }
       }),
 
     deleteSystem: (id) =>
       set((state) => {
         delete state.systems[id]
         if (state.selectedId === id) state.selectedId = null
+        db.systems.delete(id).catch((err) => console.error('[DB] deleteSystem failed:', err))
       }),
 
     selectSystem: (id) =>
@@ -47,3 +54,14 @@ export const useSystemStore = create<SystemState>()(
       }),
   }))
 )
+
+// === Selector Hooks（性能优化）===
+
+export function useSystemList(): WorkSystem[] {
+  return useSystemStore(useShallow((s) => Object.values(s.systems)))
+}
+
+export function useSystemCount(): number {
+  return useSystemStore((s) => Object.keys(s.systems).length)
+}
+

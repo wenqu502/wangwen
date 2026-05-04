@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { useShallow } from 'zustand/shallow'
 import type { PlotNode } from '@/types'
+import { db } from '@/db'
 
 interface PlotState {
   nodes: Record<string, PlotNode>
@@ -17,7 +19,7 @@ interface PlotState {
   removeEdge: (sourceId: string, targetId: string) => void
 }
 
-export const usePlotStore = create create<PlotState>()(
+export const usePlotStore = create<PlotState>()(
   immer((set) => ({
     nodes: {},
     selectedId: null,
@@ -31,12 +33,16 @@ export const usePlotStore = create create<PlotState>()(
     addNode: (node) =>
       set((state) => {
         state.nodes[node.id] = node
+        db.plotNodes.add(node).catch((err) => console.error('[DB] addNode failed:', err))
       }),
 
     updateNode: (id, updater) =>
       set((state) => {
         const n = state.nodes[id]
-        if (n) updater(n)
+        if (n) {
+          updater(n)
+          db.plotNodes.put(n).catch((err) => console.error('[DB] updateNode failed:', err))
+        }
       }),
 
     deleteNode: (id) =>
@@ -48,6 +54,7 @@ export const usePlotStore = create create<PlotState>()(
           n.parentIds = n.parentIds.filter((pid) => pid !== id)
           n.childIds = n.childIds.filter((cid) => cid !== id)
         }
+        db.plotNodes.delete(id).catch((err) => console.error('[DB] deleteNode failed:', err))
       }),
 
     selectNode: (id) =>
@@ -74,3 +81,18 @@ export const usePlotStore = create create<PlotState>()(
       }),
   }))
 )
+
+// === Selector Hooks（性能优化）===
+
+export function usePlotNodeList(): PlotNode[] {
+  return usePlotStore(useShallow((s) => Object.values(s.nodes)))
+}
+
+export function usePlotNodeCount(): number {
+  return usePlotStore((s) => Object.keys(s.nodes).length)
+}
+
+export function useSelectedPlotNode(): PlotNode | null {
+  return usePlotStore((s) => (s.selectedId ? s.nodes[s.selectedId] : null))
+}
+

@@ -1,9 +1,9 @@
 import { chatStream } from './client'
-import type { AIChatOptions, AIStreamChunk } from './types'
+import type { AIChatOptions } from './types'
 
 export interface StreamingResult {
   content: string
-  toolCalls: Array Array<{
+  toolCalls: Array<{
     id: string
     name: string
     arguments: Record<string, unknown>
@@ -13,7 +13,7 @@ export interface StreamingResult {
 export async function handleStreamingResponse(
   options: AIChatOptions,
   onContent: (text: string) => void,
-): Promise Promise<StreamingResult> {
+): Promise<StreamingResult> {
   let fullContent = ''
   const toolCallMap = new Map<string, { id: string; name: string; args: string }>()
 

@@ -36,7 +36,7 @@ export interface AIChatOptions {
 }
 
 export type AIStreamChunk = {
-  choices: Array Array<{
+  choices: Array<{
     delta: {
       content?: string
       tool_calls?: ToolCall[]

@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { useShallow } from 'zustand/shallow'
 import type { RelationEdge } from '@/types'
+import { db } from '@/db'
 
 interface RelationState {
   edges: Record<string, RelationEdge>
@@ -17,7 +19,7 @@ interface RelationState {
   removeRelationType: (type: string) => void
 }
 
-export const useRelationStore = create create<RelationState>()(
+export const useRelationStore = create<RelationState>()(
   immer((set) => ({
     edges: {},
     selectedId: null,
@@ -32,18 +34,23 @@ export const useRelationStore = create create<RelationState>()(
     addEdge: (edge) =>
       set((state) => {
         state.edges[edge.id] = edge
+        db.relations.add(edge).catch((err) => console.error('[DB] addEdge failed:', err))
       }),
 
     updateEdge: (id, updater) =>
       set((state) => {
         const e = state.edges[id]
-        if (e) updater(e)
+        if (e) {
+          updater(e)
+          db.relations.put(e).catch((err) => console.error('[DB] updateEdge failed:', err))
+        }
       }),
 
     deleteEdge: (id) =>
       set((state) => {
         delete state.edges[id]
         if (state.selectedId === id) state.selectedId = null
+        db.relations.delete(id).catch((err) => console.error('[DB] deleteEdge failed:', err))
       }),
 
     selectEdge: (id) =>
@@ -64,3 +71,14 @@ export const useRelationStore = create create<RelationState>()(
       }),
   }))
 )
+
+// === Selector Hooks（性能优化）===
+
+export function useRelationEdgeList(): RelationEdge[] {
+  return useRelationStore(useShallow((s) => Object.values(s.edges)))
+}
+
+export function useRelationEdgeCount(): number {
+  return useRelationStore((s) => Object.keys(s.edges).length)
+}
+

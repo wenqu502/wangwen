@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { useShallow } from 'zustand/shallow'
 import type { Idea } from '@/types'
+import { db } from '@/db'
 
 interface IdeaState {
   ideas: Record<string, Idea>
@@ -31,18 +33,23 @@ export const useIdeaStore = create<IdeaState>()(
     addIdea: (idea) =>
       set((state) => {
         state.ideas[idea.id] = idea
+        db.ideas.add(idea).catch((err) => console.error('[DB] addIdea failed:', err))
       }),
 
     updateIdea: (id, updater) =>
       set((state) => {
         const i = state.ideas[id]
-        if (i) updater(i)
+        if (i) {
+          updater(i)
+          db.ideas.put(i).catch((err) => console.error('[DB] updateIdea failed:', err))
+        }
       }),
 
     deleteIdea: (id) =>
       set((state) => {
         delete state.ideas[id]
         if (state.selectedId === id) state.selectedId = null
+        db.ideas.delete(id).catch((err) => console.error('[DB] deleteIdea failed:', err))
       }),
 
     selectIdea: (id) =>
@@ -53,19 +60,39 @@ export const useIdeaStore = create<IdeaState>()(
     archiveIdea: (id) =>
       set((state) => {
         const i = state.ideas[id]
-        if (i) i.status = 'archived'
+        if (i) {
+          i.status = 'archived'
+          db.ideas.put(i).catch((err) => console.error('[DB] archiveIdea failed:', err))
+        }
       }),
 
     linkIdea: (id, entity) =>
       set((state) => {
         const i = state.ideas[id]
-        if (i) i.linkedEntity = entity
+        if (i) {
+          i.linkedEntity = entity
+          db.ideas.put(i).catch((err) => console.error('[DB] linkIdea failed:', err))
+        }
       }),
 
     unlinkIdea: (id) =>
       set((state) => {
         const i = state.ideas[id]
-        if (i) i.linkedEntity = undefined
+        if (i) {
+          i.linkedEntity = undefined
+          db.ideas.put(i).catch((err) => console.error('[DB] unlinkIdea failed:', err))
+        }
       }),
   }))
 )
+
+// === Selector Hooks（性能优化）===
+
+export function useIdeaList(): Idea[] {
+  return useIdeaStore(useShallow((s) => Object.values(s.ideas)))
+}
+
+export function useIdeaCount(): number {
+  return useIdeaStore((s) => Object.keys(s.ideas).length)
+}
+

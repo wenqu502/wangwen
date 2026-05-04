@@ -24,7 +24,7 @@ export interface ChatMessage {
   timestamp: number
 }
 
-export const useAppStore = create create<AppState>()(
+export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       currentWorkId: null,
@@ -38,6 +38,10 @@ export const useAppStore = create create<AppState>()(
       toggleChatPanel: () => set((s) => ({ isChatPanelOpen: !s.isChatPanelOpen })),
       setIsLoading: (loading) => set({ isLoading: loading }),
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
+      updateMessage: (id, content) =>
+        set((s) => ({
+          messages: s.messages.map((m) => (m.id === id ? { ...m, content } : m)),
+        })),
       clearMessages: () => set({ messages: [] }),
     }),
     {

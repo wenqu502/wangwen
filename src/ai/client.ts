@@ -1,20 +1,51 @@
+/// <reference types="vite/client" />
 import OpenAI from 'openai'
 import type { AIChatOptions, AIStreamChunk, AIChatMessage } from './types'
 
-const API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY
+// === API Key 安全读取策略 ===
+// 1. 优先从 localStorage 读取（用户通过 UI 输入，不在代码中硬编码）
+// 2. 回退到环境变量（开发时可用 .env.local，生产构建应清空）
+// 3. 如果都没有，提示用户输入
+function getApiKey(): string {
+  const LS_KEY = 'wangwen:deepseek-api-key'
+  const fromStorage = localStorage.getItem(LS_KEY)
+  if (fromStorage) return fromStorage
+
+  const fromEnv = import.meta.env.VITE_DEEPSEEK_API_KEY
+  if (fromEnv && fromEnv !== 'your_api_key_here') return fromEnv
+
+  return ''
+}
+
 const BASE_URL = import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1'
 
-const client = new OpenAI({
-  baseURL: BASE_URL,
-  apiKey: API_KEY,
-  dangerouslyAllowBrowser: true,
-})
+function createClient() {
+  const apiKey = getApiKey()
+  return new OpenAI({
+    baseURL: BASE_URL,
+    apiKey,
+    dangerouslyAllowBrowser: true,
+  })
+}
 
-export async function* chatStream(options: AIChatOptions): AsyncGeneratorGenerator<AIStreamChunk> {
-  if (!API_KEY) {
-    throw new Error('DeepSeek API Key 未配置，请在 .env.local 中设置 VITE_DEEPSEEK_API_KEY')
+export function hasApiKey(): boolean {
+  return !!getApiKey()
+}
+
+export function saveApiKey(key: string): void {
+  localStorage.setItem('wangwen:deepseek-api-key', key.trim())
+}
+
+export function clearApiKey(): void {
+  localStorage.removeItem('wangwen:deepseek-api-key')
+}
+
+export async function* chatStream(options: AIChatOptions): AsyncGenerator<AIStreamChunk> {
+  if (!hasApiKey()) {
+    throw new Error('DeepSeek API Key 未配置，请在设置面板中输入您的 API Key')
   }
 
+  const client = createClient()
   const stream = await client.chat.completions.create({
     model: 'deepseek-chat',
     messages: options.messages as any,
@@ -30,10 +61,11 @@ export async function* chatStream(options: AIChatOptions): AsyncGeneratorGenerat
 }
 
 export async function chatOnce(options: AIChatOptions): Promise<string> {
-  if (!API_KEY) {
-    throw new Error('DeepSeek API Key 未配置，请在 .env.local 中设置 VITE_DEEPSEEK_API_KEY')
+  if (!hasApiKey()) {
+    throw new Error('DeepSeek API Key 未配置，请在设置面板中输入您的 API Key')
   }
 
+  const client = createClient()
   const response = await client.chat.completions.create({
     model: 'deepseek-chat',
     messages: options.messages as any,
