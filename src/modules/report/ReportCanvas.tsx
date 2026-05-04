@@ -21,7 +21,7 @@ export function ReportCanvas() {
   ]
 
   const incompleteChars = characters.filter((c) => !c.appearance || !c.background || !c.personality?.surface)
-  const orphanNodes = plotNodes.filter((n) => !n.parentId && n.status === 'planned')
+  const orphanNodes = plotNodes.filter((n) => n.parentIds.length === 0 && n.status === 'todo')
   const hiddenRelations = relations.filter((r) => r.isHidden)
 
   const checks = [

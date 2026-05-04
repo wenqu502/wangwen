@@ -50,16 +50,16 @@
 
 ---
 
-## ⏳ Phase 2: 功能开发（6 项）
+## ✅ Phase 2: 功能开发（6 项）
 
 | # | 编号 | 任务 | 状态 | 负责人 | Reviewer |
 |---|------|------|------|--------|----------|
-| 1 | F-001 | 角色编辑表单 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
-| 2 | F-002 | AI 流式输出完善 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
-| 3 | F-003 | 剧情树 React Flow | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
-| 4 | F-004 | 关系图 G6 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
-| 5 | F-005 | 体系管理页面 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
-| 6 | F-006 | 灵感便签增强 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
+| 1 | F-001 | 角色编辑表单 | ✅ 已完成 | `frontend-engineering` | `architecture-expert` |
+| 2 | F-002 | AI 流式输出完善 | ✅ 已完成 | `frontend-engineering` | `architecture-expert` |
+| 3 | F-003 | 剧情树 React Flow | ✅ 已完成 | `frontend-engineering` | `architecture-expert` |
+| 4 | F-004 | 关系图 G6 | ✅ 已完成 | `frontend-engineering` | `architecture-expert` |
+| 5 | F-005 | 体系管理页面 | ✅ 已完成 | `frontend-engineering` | `architecture-expert` |
+| 6 | F-006 | 灵感便签增强 | ✅ 已完成 | `frontend-engineering` | `architecture-expert` |
 
 ---
 

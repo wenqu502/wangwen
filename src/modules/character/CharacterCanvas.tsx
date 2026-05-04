@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useCharacterStore, useCharacterList, useSelectedCharacter, useSelectedCharacterId } from './store'
 import { useAppStore } from '@/stores/app-store'
-import { Plus, User, Trash2, Edit3, Sparkles, Check, X, Upload, Wand2, ImageIcon } from 'lucide-react'
+import { Plus, User, Trash2, Edit3, Sparkles, Check, X, Upload, Wand2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { generateCharacterId } from '@/utils/id-generator'
 import type { Character } from '@/types'
+
+const STATUS_OPTIONS: Array<{ value: Character['status']; label: string; color: string }> = [
+  { value: 'alive', label: '存活', color: 'bg-green-50 text-green-700' },
+  { value: 'dead', label: '死亡', color: 'bg-red-50 text-red-700' },
+  { value: 'missing', label: '失踪', color: 'bg-amber-50 text-amber-700' },
+  { value: 'sealed', label: '封印', color: 'bg-purple-50 text-purple-700' },
+]
 
 export function CharacterCanvas() {
   const characterList = useCharacterList()
@@ -14,7 +21,7 @@ export function CharacterCanvas() {
   const { addMessage } = useAppStore()
   const currentWorkId = useAppStore((s) => s.currentWorkId)
   const [isEditing, setIsEditing] = useState(false)
-  const [editForm, setEditForm] = useState<Partial<Character>>({})
+  const [editForm, setEditForm] = useStateState<Partial<Partial<Character>>({})
 
   const handleCreateMock = () => {
     const id = generateCharacterId()
@@ -42,6 +49,82 @@ export function CharacterCanvas() {
     })
     selectCharacter(id)
   }
+
+  const startEdit = useCallback(() => {
+    if (!selected) return
+    setIsEditing(true)
+    setEditForm({ ...selected })
+  }, [selected])
+
+  const cancelEdit = useCallback(() => {
+    setIsEditing(false)
+    setEditForm({})
+  }, [])
+
+  const saveEdit = useCallback(() => {
+    if (!selected || !editForm.name?.trim()) return
+    updateCharacter(selected.id, (c) => {
+      c.name = editForm.name || c.name
+      c.aliases = editForm.aliases || c.aliases
+      c.tags = editForm.tags || c.tags
+      c.appearance = editForm.appearance ?? c.appearance
+      c.background = editForm.background ?? c.background
+      c.personality = editForm.personality ? { ...editForm.personality } : c.personality
+      c.trauma = editForm.trauma ?? c.trauma
+      c.goals = editForm.goals ?? c.goals
+      c.arc = editForm.arc ?? c.arc
+      c.quotes = editForm.quotes || c.quotes
+      c.abilities = editForm.abilities || c.abilities
+      c.status = editForm.status || c.status
+      c.images = editForm.images ?? c.images
+      c.updatedAt = new Date().toISOString()
+    })
+    setIsEditing(false)
+    setEditForm({})
+  }, [selected, editForm, updateCharacter])
+
+  const updateField = useCallback(<K extends keyof Character>(field: K, value: Character[K]) => {
+    setEditForm((f) => ({ ...f, [field]: value }))
+  }, [])
+
+  const updatePersonality = useCallback((key: keyof Character['personality'], value: string) => {
+    setEditForm((f) => ({
+      ...f,
+      personality: { ...(f.personality || {}), [key]: value },
+    }))
+  }, [])
+
+  const updateArray = useCallback(<K extends 'quotes' | 'abilities' | 'tags' | 'aliases'>(
+    field: K,
+    index: number,
+    value: string
+  ) => {
+    setEditForm((f) => {
+      const arr = [...(f[field] || [])]
+      arr[index] = value
+      return { ...f, [field]: arr }
+    })
+  }, [])
+
+  const addArrayItem = useCallback(<K extends 'quotes' | 'abilities' | 'tags' | 'aliases'>(
+    field: K,
+    defaultValue = ''
+  ) => {
+    setEditForm((f) => ({
+      ...f,
+      [field]: [...(f[field] || []), defaultValue],
+    }))
+  }, [])
+
+  const removeArrayItem = useCallback(<K extends 'quotes' | 'abilities' | 'tags' | 'aliases'>(
+    field: K,
+    index: number
+  ) => {
+    setEditForm((f) => ({
+      ...f,
+      [field]: (f[field] || []).filter((_, i) => i !== index),
+    }))
+  }, [])
 
   return (
     <div className="h-full flex gap-4">
@@ -114,9 +197,10 @@ export function CharacterCanvas() {
       </div>
 
       {/* 右侧角色详情 */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-y-auto">
         {selected ? (
           <div className="bg-white rounded-xl border border-neutral-200 p-6 space-y-6">
+            {/* 头部信息 */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold overflow-hidden">
@@ -138,7 +222,7 @@ export function CharacterCanvas() {
                           const reader = new FileReader()
                           reader.onload = () => {
                             const dataUrl = reader.result as string
-                            setEditForm((f) => ({ ...f, images: [dataUrl] }))
+                            updateField('images', [dataUrl])
                           }
                           reader.readAsDataURL(file)
                         }}
@@ -159,7 +243,7 @@ export function CharacterCanvas() {
                   {isEditing ? (
                     <input
                       value={editForm.name || ''}
-                      onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                      onChange={(e) => updateField('name', e.target.value)}
                       className="text-xl font-bold text-neutral-900 border-b border-neutral-300 outline-none bg-transparent w-full"
                       placeholder="角色名"
                     />
@@ -170,7 +254,7 @@ export function CharacterCanvas() {
                     <input
                       value={(editForm.aliases || []).join(' / ')}
                       onChange={(e) =>
-                        setEditForm((f) => ({ ...f, aliases: e.target.value.split(/[\/,]/).map((s) => s.trim()).filter(Boolean) }))
+                        updateField('aliases', e.target.value.split(/[\/，,]/).map((s) => s.trim()).filter(Boolean))
                       }
                       className="text-sm text-neutral-500 border-b border-neutral-300 outline-none bg-transparent w-full mt-1"
                       placeholder="别名（用 / 分隔）"
@@ -185,10 +269,7 @@ export function CharacterCanvas() {
               <div className="flex gap-1">
                 {!isEditing ? (
                   <button
-                    onClick={() => {
-                      setIsEditing(true)
-                      setEditForm({ ...selected })
-                    }}
+                    onClick={startEdit}
                     aria-label="编辑角色"
                     className="p-2 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                   >
@@ -197,31 +278,14 @@ export function CharacterCanvas() {
                 ) : (
                   <>
                     <button
-                      onClick={() => {
-                        if (!editForm.name?.trim()) return
-                        updateCharacter(selected.id, (c) => {
-                          c.name = editForm.name || c.name
-                          c.aliases = editForm.aliases || c.aliases
-                          c.appearance = editForm.appearance ?? c.appearance
-                          c.background = editForm.background ?? c.background
-                          c.personality = { ...c.personality, ...(editForm.personality || {}) }
-                          c.goals = editForm.goals ?? c.goals
-                          c.images = editForm.images ?? c.images
-                          c.updatedAt = new Date().toISOString()
-                        })
-                        setIsEditing(false)
-                        setEditForm({})
-                      }}
+                      onClick={saveEdit}
                       aria-label="确认编辑"
                       className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
                     >
                       <Check className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => {
-                        setIsEditing(false)
-                        setEditForm({})
-                      }}
+                      onClick={cancelEdit}
                       aria-label="取消编辑"
                       className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
                     >
@@ -239,26 +303,56 @@ export function CharacterCanvas() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {selected.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-full"
+            {/* 标签与状态 */}
+            <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-2">
+                {isEditing ? (
+                  <ArrayEditorInline
+                    items={editForm.tags || []}
+                    onUpdate={(i, v) => updateArray('tags', i, v)}
+                    onAdd={() => addArrayItem('tags', '新标签')}
+                    onRemove={(i) => removeArrayItem('tags', i)}
+                    placeholder="标签"
+                    color="indigo"
+                  />
+                ) : (
+                  selected.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))
+                )}
+              </div>
+              {isEditing ? (
+                <select
+                  value={editForm.status || 'alive'}
+                  onChange={(e) => updateField('status', e.target.value as Character['status'])}
+                  className="text-sm px-2 py-1 border border-neutral-200 rounded-md bg-white"
                 >
-                  {tag}
-                </span>
-              ))}
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <StatusBadge status={selected.status} />
+              )}
             </div>
 
+            {/* 基础信息网格 */}
             <div className="grid grid-cols-2 gap-4">
               {isEditing ? (
                 <>
-                  <EditBlock label="外貌" value={editForm.appearance || ''} onChange={(v) => setEditForm((f) => ({ ...f, appearance: v }))} />
-                  <EditBlock label="背景" value={editForm.background || ''} onChange={(v) => setEditForm((f) => ({ ...f, background: v }))} />
-                  <EditBlock label="表面性格" value={editForm.personality?.surface || ''} onChange={(v) => setEditForm((f) => ({ ...f, personality: { ...f.personality, surface: v } }))} />
-                  <EditBlock label="内心性格" value={editForm.personality?.inner || ''} onChange={(v) => setEditForm((f) => ({ ...f, personality: { ...f.personality, inner: v } }))} />
-                  <EditBlock label="应激反应" value={editForm.personality?.stressResponse || ''} onChange={(v) => setEditForm((f) => ({ ...f, personality: { ...f.personality, stressResponse: v } }))} />
-                  <EditBlock label="目标" value={editForm.goals || ''} onChange={(v) => setEditForm((f) => ({ ...f, goals: v }))} />
+                  <EditBlock label="外貌" value={editForm.appearance || ''} onChange={(v) => updateField('appearance', v)} />
+                  <EditBlock label="背景" value={editForm.background || ''} onChange={(v) => updateField('background', v)} />
+                  <EditBlock label="表面性格" value={editForm.personality?.surface || ''} onChange={(v) => updatePersonality('surface', v)} />
+                  <EditBlock label="内心性格" value={editForm.personality?.inner || ''} onChange={(v) => updatePersonality('inner', v)} />
+                  <EditBlock label="应激反应" value={editForm.personality?.stressResponse || ''} onChange={(v) => updatePersonality('stressResponse', v)} />
+                  <EditBlock label="目标" value={editForm.goals || ''} onChange={(v) => updateField('goals', v)} />
+                  <EditBlock label="创伤" value={editForm.trauma || ''} onChange={(v) => updateField('trauma', v)} />
+                  <EditBlock label="成长弧线" value={editForm.arc || ''} onChange={(v) => updateField('arc', v)} />
                 </>
               ) : (
                 <>
@@ -268,13 +362,25 @@ export function CharacterCanvas() {
                   <InfoBlock label="内心性格" content={selected.personality.inner || '未填写'} />
                   <InfoBlock label="应激反应" content={selected.personality.stressResponse || '未填写'} />
                   <InfoBlock label="目标" content={selected.goals || '未填写'} />
+                  <InfoBlock label="创伤" content={selected.trauma || '未填写'} />
+                  <InfoBlock label="成长弧线" content={selected.arc || '未填写'} />
                 </>
               )}
             </div>
 
-            {selected.quotes.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-neutral-700 mb-2">经典台词</h4>
+            {/* 经典台词 */}
+            <div>
+              <h4 className="text-sm font-semibold text-neutral-700 mb-2">经典台词</h4>
+              {isEditing ? (
+                <ArrayEditorBlock
+                  items={editForm.quotes || []}
+                  onUpdate={(i, v) => updateArray('quotes', i, v)}
+                  onAdd={() => addArrayItem('quotes', '')}
+                  onRemove={(i) => removeArrayItem('quotes', i)}
+                  placeholder="输入一句台词..."
+                  icon="quote"
+                />
+              ) : selected.quotes.length > 0 ? (
                 <div className="space-y-2">
                   {selected.quotes.map((quote, i) => (
                     <p key={i} className="text-sm text-neutral-600 italic pl-3 border-l-2 border-indigo-200">
@@ -282,8 +388,35 @@ export function CharacterCanvas() {
                     </p>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-neutral-400 italic">暂无台词</p>
+              )}
+            </div>
+
+            {/* 能力/技能 */}
+            <div>
+              <h4 className="text-sm font-semibold text-neutral-700 mb-2">能力 / 技能</h4>
+              {isEditing ? (
+                <ArrayEditorBlock
+                  items={editForm.abilities || []}
+                  onUpdate={(i, v) => updateArray('abilities', i, v)}
+                  onAdd={() => addArrayItem('abilities', '')}
+                  onRemove={(i) => removeArrayItem('abilities', i)}
+                  placeholder="输入一项能力..."
+                  icon="tag"
+                />
+              ) : selected.abilities.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selected.abilities.map((a, i) => (
+                    <span key={i} className="px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 rounded-full">
+                      {a}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-neutral-400 italic">暂无能力记录</p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 space-y-3">
@@ -296,6 +429,16 @@ export function CharacterCanvas() {
         )}
       </div>
     </div>
+  )
+}
+
+function StatusBadge({ status }: { status: Character['status'] }) {
+  const config = STATUS_OPTIONS.find((s) => s.value === status)
+  if (!config) return null
+  return (
+    <span className={cn('text-xs px-2 py-1 rounded-full font-medium', config.color)}>
+      {config.label}
+    </span>
   )
 }
 
@@ -318,6 +461,99 @@ function EditBlock({ label, value, onChange }: { label: string; value: string; o
         className="w-full text-sm text-neutral-800 bg-transparent outline-none resize-none h-16"
         placeholder={`填写${label}...`}
       />
+    </div>
+  )
+}
+
+/** 内联数组编辑器（用于标签等短文本） */
+function ArrayEditorInline({
+  items,
+  onUpdate,
+  onAdd,
+  onRemove,
+  placeholder,
+  color = 'indigo',
+}: {
+  items: string[]
+  onUpdate: (index: number, value: string) => void
+  onAdd: () => void
+  onRemove: (index: number) => void
+  placeholder: string
+  color?: string
+}) {
+  const colorMap: Record<string, string> = {
+    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    green: 'bg-green-50 text-green-700 border-green-200',
+    amber: 'bg-amber-50 text-amber-700 border-amber-200',
+  }
+  const style = colorMap[color] || colorMap.indigo
+
+  return (
+    <div className="flex flex-wrap gap-1.5 items-center">
+      {items.map((item, i) => (
+        <div key={i} className={cn('flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border', style)}>
+          <input
+            value={item}
+            onChange={(e) => onUpdate(i, e.target.value)}
+            className="bg-transparent outline-none w-16 min-w-0"
+            placeholder={placeholder}
+          />
+          <button onClick={() => onRemove(i)} className="hover:text-red-500">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      ))}
+      <button
+        onClick={onAdd}
+        className="text-xs px-2 py-0.5 rounded-full border border-dashed border-neutral-300 text-neutral-500 hover:bg-neutral-50"
+      >
+        + {placeholder}
+      </button>
+    </div>
+  )
+}
+
+/** 块级数组编辑器（用于台词、能力等） */
+function ArrayEditorBlock({
+  items,
+  onUpdate,
+  onAdd,
+  onRemove,
+  placeholder,
+  icon,
+}: {
+  items: string[]
+  onUpdate: (index: number, value: string) => void
+  onAdd: () => void
+  onRemove: (index: number) => void
+  placeholder: string
+  icon: 'quote' | 'tag'
+}) {
+  return (
+    <div className="space-y-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            value={item}
+            onChange={(e) => onUpdate(i, e.target.value)}
+            className="flex-1 text-sm px-3 py-2 border border-neutral-200 rounded-md bg-white outline-none focus:border-indigo-300"
+            placeholder={placeholder}
+          />
+          <button
+            onClick={() => onRemove(i)}
+            className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
+      <button
+        onClick={onAdd}
+        className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 px-1 py-1"
+      >
+        <Plus className="w-4 h-4" />
+        <span>添加{placeholder.replace(/输入一?[个项]?/, '').replace(/\.\.\./, '')}</span>
+      </button>
     </div>
   )
 }
