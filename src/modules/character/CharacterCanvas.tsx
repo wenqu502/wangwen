@@ -13,7 +13,7 @@ export function CharacterCanvas() {
   const { selectCharacter, addCharacter, deleteCharacter, updateCharacter } = useCharacterStore()
   const { addMessage } = useAppStore()
   const [isEditing, setIsEditing] = useState(false)
-  const [editForm, setEditForm] = useState<Partial<Partial<Character>>({})
+  const [editForm, setEditForm] = useState<Partial<Character>>({})
 
   const handleCreateMock = () => {
     const id = generateCharacterId()
