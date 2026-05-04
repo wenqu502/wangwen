@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>离线模式 — 织文</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .container {
+        background: #fff;
+        border-radius: 16px;
+        padding: 48px 32px;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+      .icon {
+        font-size: 64px;
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: 24px;
+        color: #1a1a2e;
+        margin-bottom: 12px;
+        font-weight: 600;
+      }
+      p {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 8px;
+        font-size: 15px;
+      }
+      .hint {
+        background: #f0f4ff;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 24px 0;
+        text-align: left;
+      }
+      .hint-title {
+        font-weight: 600;
+        color: #4c6ef5;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .hint ul {
+        padding-left: 18px;
+        color: #555;
+        font-size: 13px;
+      }
+      .hint li {
+        margin-bottom: 6px;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 24px;
+      }
+      button {
+        padding: 12px 28px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+      }
+      .btn-primary {
+        background: #4c6ef5;
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #3b5bdb;
+      }
+      .btn-secondary {
+        background: #e9ecef;
+        color: #495057;
+      }
+      .btn-secondary:hover {
+        background: #dee2e6;
+      }
+      .status {
+        margin-top: 16px;
+        font-size: 13px;
+        color: #868e96;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        .container {
+          background: #242442;
+        }
+        h1 {
+          color: #e4e4f0;
+        }
+        p {
+          color: #a0a0b8;
+        }
+        .hint {
+          background: rgba(76, 110, 245, 0.1);
+        }
+        .hint-title {
+          color: #748ffc;
+        }
+        .hint ul {
+          color: #b0b0c8;
+        }
+        .btn-secondary {
+          background: #34345a;
+          color: #c0c0d8;
+        }
+        .btn-secondary:hover {
+          background: #404068;
+        }
+        .status {
+          color: #707090;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📡</div>
+      <h1>您当前处于离线状态</h1>
+      <p>网络连接已断开，但您之前访问过的内容仍然可用。</p>
+
+      <div class="hint">
+        <div class="hint-title">💡 离线时您可以：</div>
+        <ul>
+          <li>浏览之前已加载的页面和数据</li>
+          <li>查看已缓存的角色、剧情和世界观</li>
+          <li>使用本地存储的灵感便签</li>
+        </ul>
+      </div>
+
+      <div class="hint">
+        <div class="hint-title">⚠️ 离线时暂不可用：</div>
+        <ul>
+          <li>AI 聊天和创作辅助功能</li>
+          <li>首次访问未缓存的新页面</li>
+        </ul>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" onclick="location.reload()">🔄 刷新页面</button>
+        <button class="btn-secondary" onclick="history.back()">⬅️ 返回上一页</button>
+      </div>
+
+      <div class="status" id="status">正在检测网络状态...</div>
+    </div>
+
+    <script>
+      // 实时检测网络状态变化
+      function updateStatus() {
+        const statusEl = document.getElementById('status')
+        if (navigator.onLine) {
+          statusEl.textContent = '✅ 网络已恢复，正在重新加载...'
+          setTimeout(() => location.reload(), 1200)
+        } else {
+          statusEl.textContent = '❌ 网络连接不可用'
+        }
+      }
+
+      window.addEventListener('online', updateStatus)
+      window.addEventListener('offline', updateStatus)
+      updateStatus()
+    </script>
+  </body>
+</html>

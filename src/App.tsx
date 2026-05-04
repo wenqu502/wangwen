@@ -11,6 +11,7 @@ import { useState, useCallback } from 'react'
 import { exportWork } from '@/lib/export'
 import { SearchModal } from '@/components/search/SearchModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { OfflineBanner } from '@/components/OfflineBanner'
 
 const CharacterCanvas = lazy(() => import('@/modules/character/CharacterCanvas').then(m => ({ default: m.CharacterCanvas })))
 const PlotCanvas = lazy(() => import('@/modules/plot/PlotCanvas').then(m => ({ default: m.PlotCanvas })))
@@ -212,6 +213,8 @@ function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">
+      {/* P2-002: 离线状态提示横幅 */}
+      <OfflineBanner />
       {/* 顶部导航栏 */}
       <header className="h-[52px] flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-4">
