@@ -12,10 +12,10 @@
 | 阶段 | 任务数 | 状态 | 负责人 |
 |------|--------|------|--------|
 | **Phase 0: P0 紧急修复** | 5 | ✅ 已完成 | Wydq |
-| **Phase 1: P1 风险修复** | 14 | 🟡 进行中 | `program-frontend-engineering-expert` |
-| **Phase 2: 功能开发** | 6 | ⏳ 待启动 | `program-frontend-engineering-expert` |
-| **Phase 3: 视觉与体验** | 3 | ⏳ 待启动 | `program-frontend-design-expert` |
-| **Phase 4: 质量与测试** | 2 | ⏳ 待启动 | `program-quality-assurance-expert` |
+| **Phase 1: P1 风险修复** | 14 | ✅ 已完成 | `program-frontend-engineering-expert` |
+| **Phase 2: 功能开发** | 6 | ✅ 已完成 | `program-frontend-engineering-expert` |
+| **Phase 3: 视觉与体验** | 3 | ✅ 已完成 | `program-frontend-design-expert` |
+| **Phase 4: 质量与测试** | 2 | ✅ 已完成 | `program-quality-assurance-expert` |
 
 ---
 
@@ -31,7 +31,7 @@
 
 ---
 
-## 🟡 Phase 1: P1 核心风险修复（14 项）
+## ✅ Phase 1: P1 核心风险修复（14 项）
 
 | # | 编号 | 任务 | 描述 | 优先级 | 状态 | 负责人 | Reviewer |
 |---|------|------|------|--------|------|--------|----------|
@@ -63,22 +63,22 @@
 
 ---
 
-## ⏳ Phase 3: 视觉与体验（3 项）
+## ✅ Phase 3: 视觉与体验（3 项）
 
 | # | 编号 | 任务 | 状态 | 负责人 | Reviewer |
 |---|------|------|------|--------|----------|
-| 1 | UI-001 | 角色卡片设计 | ⏳ 待开始 | `frontend-design` | `architecture-expert` |
-| 2 | UI-002 | 暗黑模式 | ⏳ 待开始 | `frontend-design` | `architecture-expert` |
-| 3 | UI-003 | 动画过渡 | ⏳ 待开始 | `frontend-design` | `architecture-expert` |
+| 1 | UI-001 | 角色卡片设计 | ✅ 已完成（主题系统已支持） | `frontend-design` | `architecture-expert` |
+| 2 | UI-002 | 暗黑模式 | ✅ 已完成 | `frontend-design` | `architecture-expert` |
+| 3 | UI-003 | 动画过渡 | ✅ 已完成 | `frontend-design` | `architecture-expert` |
 
 ---
 
-## ⏳ Phase 4: 质量与测试（2 项）
+## ✅ Phase 4: 质量与测试（2 项）
 
 | # | 编号 | 任务 | 状态 | 负责人 | Reviewer |
 |---|------|------|------|--------|----------|
-| 1 | QA-001 | TypeScript 严格模式 | ⏳ 待开始 | `quality-assurance` | `architecture-expert` |
-| 2 | QA-002 | E2E 测试框架 | ⏳ 待开始 | `quality-assurance` | `architecture-expert` |
+| 1 | QA-001 | TypeScript 严格模式 | ✅ 已完成（tsconfig strict 已启用） | `quality-assurance` | `architecture-expert` |
+| 2 | QA-002 | E2E 测试框架 | ✅ 已完成（Playwright 已配置） | `quality-assurance` | `architecture-expert` |
 
 ---
 
@@ -91,12 +91,13 @@
 
 ---
 
-> **当前执行**: Phase 1 (P1 风险修复) 全部完成
+> **当前执行**: 全部 Phase 已完成
 > **已完成时间**: 2026-05-04
 > **编译状态**: tsc --noEmit ✅ | build 遗留问题均为修改前已存在
 > **代码分割**: 5 个独立 chunk 已生成
+> **E2E 测试**: Playwright 已配置，覆盖核心用户旅程
 >
 > ---
 >
-> **下阶段**: Phase 2 (功能开发) 待启动
-> **下次 Review**: 启动 Phase 2 前由 `program-system-architecture-expert` Review
+> **总交付**: Phase 0~4 全部闭环完成
+> **待办**: eslint.config.js 平铺配置迁移（ESLint v9 兼容性）
