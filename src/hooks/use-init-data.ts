@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { db } from '@/db'
+import { loadAllDataByWorkId } from '@/db/operations'
 import { useCharacterStore } from '@/modules/character/store'
 import { usePlotStore } from '@/modules/plot/store'
 import { useRelationStore } from '@/modules/relation/store'
@@ -7,9 +7,10 @@ import { useSystemStore } from '@/modules/system/store'
 import { useIdeaStore } from '@/modules/idea/store'
 
 /**
- * 应用初始化：从 Dexie 加载数据到各模块 Store
+ * 应用初始化：从 Dexie 加载数据到各模块 Store (P1-004/P1-005)
  *
  * 数据流向：Dexie IndexedDB → Zustand Store → React UI
+ * 优化：使用统一的事务加载函数，读写分离
  */
 export function useInitData(workId: string | null) {
   const [isReady, setIsReady] = useState(false)
@@ -25,19 +26,15 @@ export function useInitData(workId: string | null) {
     async function loadAll() {
       console.log('[Init] 开始加载数据，workId:', currentWorkId)
 
-      const [
-        characters,
-        plotNodes,
-        relations,
-        systems,
-        ideas,
-      ] = await Promise.all([
-        db.characters.where('workId').equals(currentWorkId).toArray(),
-        db.plotNodes.where('workId').equals(currentWorkId).toArray(),
-        db.relations.where('workId').equals(currentWorkId).toArray(),
-        db.systems.where('workId').equals(currentWorkId).toArray(),
-        db.ideas.where('workId').equals(currentWorkId).toArray(),
-      ])
+      const result = await loadAllDataByWorkId(currentWorkId)
+
+      if (!result.success) {
+        console.error('[Init] 数据加载失败:', result.error)
+        setIsReady(true)
+        return
+      }
+
+      const { characters, plotNodes, relations, systems, ideas } = result
 
       useCharacterStore.getState().setCharacters(characters)
       usePlotStore.getState().setNodes(plotNodes)
@@ -57,7 +54,7 @@ export function useInitData(workId: string | null) {
     }
 
     loadAll().catch((err) => {
-      console.error('[Init] 数据加载失败:', err)
+      console.error('[Init] 数据加载异常:', err)
       setIsReady(true)
     })
   }, [workId])

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
 import type { RelationEdge } from '@/types'
-import { db } from '@/db'
+import { writeAddRelation, writeUpdateRelation, writeDeleteRelation } from '@/db/operations'
 
 interface RelationState {
   edges: Record<string, RelationEdge>
@@ -34,7 +34,7 @@ export const useRelationStore = create<RelationState>()(
     addEdge: (edge) =>
       set((state) => {
         state.edges[edge.id] = edge
-        db.relations.add(edge).catch((err) => console.error('[DB] addEdge failed:', err))
+        writeAddRelation(edge).catch((err) => console.error('[DB] addEdge failed:', err))
       }),
 
     updateEdge: (id, updater) =>
@@ -42,7 +42,7 @@ export const useRelationStore = create<RelationState>()(
         const e = state.edges[id]
         if (e) {
           updater(e)
-          db.relations.put(e).catch((err) => console.error('[DB] updateEdge failed:', err))
+          writeUpdateRelation(e).catch((err) => console.error('[DB] updateEdge failed:', err))
         }
       }),
 
@@ -50,7 +50,7 @@ export const useRelationStore = create<RelationState>()(
       set((state) => {
         delete state.edges[id]
         if (state.selectedId === id) state.selectedId = null
-        db.relations.delete(id).catch((err) => console.error('[DB] deleteEdge failed:', err))
+        writeDeleteRelation(id).catch((err) => console.error('[DB] deleteEdge failed:', err))
       }),
 
     selectEdge: (id) =>
@@ -74,9 +74,8 @@ export const useRelationStore = create<RelationState>()(
 
 // === Selector Hooks（性能优化）===
 
-export function useRelationEdgeList(): RelationEdge[] {
-  return useRelationStore(useShallow((s) => Object.values(s.edges)))
-}
+export const useRelationEdgeList = () =>
+  useRelationStore(useShallow((s) => Object.values(s.edges)))
 
 export function useRelationEdgeCount(): number {
   return useRelationStore((s) => Object.keys(s.edges).length)

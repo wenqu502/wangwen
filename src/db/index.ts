@@ -15,7 +15,7 @@ class WangWenDB extends Dexie {
     // === v1: 初始版本 (2026-05-03) ===
     this.version(1).stores({
       works: 'id, name, createdAt',
-      characters: 'id, workId, [workId+name], createdAt',
+      characters: 'id, workId, [workId+name]',
       plotNodes: 'id, workId, [workId+status]',
       relations: 'id, workId, [workId+sourceId], [workId+targetId]',
       systems: 'id, workId',
@@ -26,7 +26,7 @@ class WangWenDB extends Dexie {
     this.version(2)
       .stores({
         works: 'id, name, createdAt',
-        characters: 'id, workId, [workId+name], createdAt',
+        characters: 'id, workId, [workId+name]',
         plotNodes: 'id, workId, [workId+status], createdAt',
         relations: 'id, workId, [workId+sourceId], [workId+targetId], createdAt',
         systems: 'id, workId, createdAt',
@@ -67,6 +67,22 @@ class WangWenDB extends Dexie {
         })
         return Promise.all(mods)
       })
+
+    // === v3: 移除冗余单字段索引 (P1-008)
+    // 复合索引的最左前缀可覆盖单字段查询，减少写入开销和存储空间
+    this.version(3).stores({
+      works: 'id, name, createdAt',
+      // [workId+name] 复合索引的前缀 workId 可覆盖 where('workId').equals() 查询
+      characters: 'id, [workId+name]',
+      // [workId+status] 复合索引的前缀 workId 可覆盖 where('workId').equals() 查询
+      plotNodes: 'id, [workId+status], createdAt',
+      // [workId+sourceId] 和 [workId+targetId] 的前缀 workId 均可覆盖
+      relations: 'id, [workId+sourceId], [workId+targetId], createdAt',
+      // systems 无复合索引，保留 workId 单字段索引
+      systems: 'id, workId, createdAt',
+      // [workId+status] 复合索引的前缀 workId 可覆盖
+      ideas: 'id, [workId+status], createdAt',
+    })
   }
 }
 

@@ -134,4 +134,4 @@ export interface Idea {
   createdAt: string
 }
 
-export type ModuleTab = 'character' | 'plot' | 'relation' | 'system' | 'idea'
+export type ModuleTab = 'character' | 'plot' | 'relation' | 'system' | 'idea' | 'report'

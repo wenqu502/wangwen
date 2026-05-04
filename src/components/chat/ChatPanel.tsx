@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, useId, memo } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { sanitizeHtml } from '@/utils/sanitize'
 import { Send, Bot, User, Loader2, Sparkles, Users, GitBranch, Network, Layers } from 'lucide-react'
@@ -7,11 +7,60 @@ import { handleStreamingResponse } from '@/ai/streaming'
 import { buildSystemPrompt } from '@/ai/client'
 import { tools } from '@/ai/function-calling'
 import { executeTool } from '@/ai/tool-executor'
+import type { ChatMessage } from '@/stores/app-store'
+
+/** 单条消息气泡 — memo 化避免大型列表重渲染 (P1-003) */
+const MessageBubble = memo(function MessageBubble({ msg }: { msg: ChatMessage }) {
+  return (
+    <div
+      className={cn(
+        'flex gap-2.5',
+        msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+      )}
+    >
+      <div
+        className={cn(
+          'w-7 h-7 rounded-full flex items-center justify-center shrink-0',
+          msg.role === 'user'
+            ? 'bg-indigo-600 text-white'
+            : 'bg-indigo-100 text-indigo-600'
+        )}
+      >
+        {msg.role === 'user' ? (
+          <User className="w-4 h-4" />
+        ) : (
+          <Bot className="w-4 h-4" />
+        )}
+      </div>
+      <div
+        className={cn(
+          'max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed',
+          msg.role === 'user'
+            ? 'bg-indigo-600 text-white rounded-br-md'
+            : 'bg-neutral-100 text-neutral-800 rounded-bl-md'
+        )}
+      >
+        {msg.role === 'assistant' ? (
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(msg.content) }} />
+        ) : (
+          <div>{msg.content}</div>
+        )}
+      </div>
+    </div>
+  )
+})
 
 export function ChatPanel() {
-  const { messages, addMessage, updateMessage, isLoading, setIsLoading, currentTab } = useAppStore()
+  const messages = useAppStore((s) => s.messages)
+  const addMessage = useAppStore((s) => s.addMessage)
+  const updateMessage = useAppStore((s) => s.updateMessage)
+  const isLoading = useAppStore((s) => s.isLoading)
+  const setIsLoading = useAppStore((s) => s.setIsLoading)
+  const currentTab = useAppStore((s) => s.currentTab)
+
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const panelId = useId()
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -19,7 +68,7 @@ export function ChatPanel() {
     }
   }, [messages])
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return
 
     const userMsgId = `msg_${Date.now()}`
@@ -89,14 +138,14 @@ export function ChatPanel() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [input, isLoading, currentTab, messages, addMessage, updateMessage, setIsLoading])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
-  }
+  }, [handleSend])
 
   return (
     <div className="flex flex-col h-full">
@@ -139,42 +188,7 @@ export function ChatPanel() {
         )}
 
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={cn(
-              'flex gap-2.5',
-              msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-            )}
-          >
-            <div
-              className={cn(
-                'w-7 h-7 rounded-full flex items-center justify-center shrink-0',
-                msg.role === 'user'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-indigo-100 text-indigo-600'
-              )}
-            >
-              {msg.role === 'user' ? (
-                <User className="w-4 h-4" />
-              ) : (
-                <Bot className="w-4 h-4" />
-              )}
-            </div>
-            <div
-              className={cn(
-                'max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed',
-                msg.role === 'user'
-                  ? 'bg-indigo-600 text-white rounded-br-md'
-                  : 'bg-neutral-100 text-neutral-800 rounded-bl-md'
-              )}
-            >
-              {msg.role === 'assistant' ? (
-                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(msg.content) }} />
-              ) : (
-                <div>{msg.content}</div>
-              )}
-            </div>
-          </div>
+          <MessageBubble key={msg.id} msg={msg} />
         ))}
 
         {isLoading && (
@@ -210,11 +224,13 @@ export function ChatPanel() {
       <div className="p-3 border-t border-neutral-200 shrink-0">
         <div className="flex items-end gap-2 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 focus-within:border-indigo-300 focus-within:ring-1 focus-within:ring-indigo-300 transition-all">
           <textarea
+            id={`${panelId}-input`}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="描述你的创作想法..."
             rows={1}
+            aria-label="创作想法输入框"
             className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 resize-none outline-none min-h-[20px] max-h-[120px]"
           />
           <button

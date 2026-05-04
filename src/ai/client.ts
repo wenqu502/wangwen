@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import OpenAI from 'openai'
+import { DEEPSEEK_CONFIG, FEATURE_FLAGS } from '@/config/env'
 import type { AIChatOptions, AIStreamChunk, AIChatMessage } from './types'
 
 // === API Key 安全读取策略 ===
@@ -17,7 +18,7 @@ function getApiKey(): string {
   return ''
 }
 
-const BASE_URL = import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1'
+const BASE_URL = DEEPSEEK_CONFIG.baseURL
 
 function createClient() {
   const apiKey = getApiKey()
@@ -47,12 +48,12 @@ export async function* chatStream(options: AIChatOptions): AsyncGenerator<AIStre
 
   const client = createClient()
   const stream = await client.chat.completions.create({
-    model: 'deepseek-chat',
+    model: DEEPSEEK_CONFIG.model,
     messages: options.messages as any,
     tools: options.tools as any,
     stream: true,
-    temperature: options.temperature ?? 0.7,
-    max_tokens: options.maxTokens ?? 4096,
+    temperature: options.temperature ?? DEEPSEEK_CONFIG.temperature,
+    max_tokens: options.maxTokens ?? DEEPSEEK_CONFIG.maxTokens,
   })
 
   for await (const chunk of stream) {
@@ -67,11 +68,11 @@ export async function chatOnce(options: AIChatOptions): Promise<string> {
 
   const client = createClient()
   const response = await client.chat.completions.create({
-    model: 'deepseek-chat',
+    model: DEEPSEEK_CONFIG.model,
     messages: options.messages as any,
     tools: options.tools as any,
-    temperature: options.temperature ?? 0.7,
-    max_tokens: options.maxTokens ?? 4096,
+    temperature: options.temperature ?? DEEPSEEK_CONFIG.temperature,
+    max_tokens: options.maxTokens ?? DEEPSEEK_CONFIG.maxTokens,
   })
 
   return response.choices[0]?.message?.content ?? ''
@@ -121,7 +122,7 @@ export function buildSystemPrompt(currentTab?: string): AIChatMessage {
 // === Mock / Demo Mode ===
 // 当没有配置 API Key 时，进入演示模式，模拟 AI 响应以便体验完整交互流程
 
-const MOCK_DELAY_MS = 10
+const MOCK_DELAY_MS = DEEPSEEK_CONFIG.mockDelayMs
 
 export function isMockMode(): boolean {
   return !hasApiKey()

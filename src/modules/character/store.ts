@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
 import type { Character } from '@/types'
-import { db } from '@/db'
+import { writeAddCharacter, writeUpdateCharacter, writeDeleteCharacter } from '@/db/operations'
 
 interface CharacterState {
   characters: Record<string, Character>
@@ -29,7 +29,7 @@ export const useCharacterStore = create<CharacterState>()(
     addCharacter: (char) =>
       set((state) => {
         state.characters[char.id] = char
-        db.characters.add(char).catch((err) => console.error('[DB] addCharacter failed:', err))
+        writeAddCharacter(char).catch((err) => console.error('[DB] addCharacter failed:', err))
       }),
 
     updateCharacter: (id, updater) =>
@@ -37,7 +37,7 @@ export const useCharacterStore = create<CharacterState>()(
         const c = state.characters[id]
         if (c) {
           updater(c)
-          db.characters.put(c).catch((err) => console.error('[DB] updateCharacter failed:', err))
+          writeUpdateCharacter(c).catch((err) => console.error('[DB] updateCharacter failed:', err))
         }
       }),
 
@@ -45,7 +45,7 @@ export const useCharacterStore = create<CharacterState>()(
       set((state) => {
         delete state.characters[id]
         if (state.selectedId === id) state.selectedId = null
-        db.characters.delete(id).catch((err) => console.error('[DB] deleteCharacter failed:', err))
+        writeDeleteCharacter(id).catch((err) => console.error('[DB] deleteCharacter failed:', err))
       }),
 
     selectCharacter: (id) =>
@@ -58,9 +58,8 @@ export const useCharacterStore = create<CharacterState>()(
 // === Selector Hooks（性能优化：避免全量重渲染）===
 
 /** 获取角色列表（数组形式） */
-export function useCharacterList(): Character[] {
-  return useCharacterStore(useShallow((s) => Object.values(s.characters)))
-}
+export const useCharacterList = () =>
+  useCharacterStore(useShallow((s) => Object.values(s.characters)))
 
 /** 获取角色数量 */
 export function useCharacterCount(): number {

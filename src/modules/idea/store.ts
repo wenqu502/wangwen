@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
 import type { Idea } from '@/types'
-import { db } from '@/db'
+import { writeAddIdea, writeUpdateIdea, writeDeleteIdea } from '@/db/operations'
 
 interface IdeaState {
   ideas: Record<string, Idea>
@@ -33,7 +33,7 @@ export const useIdeaStore = create<IdeaState>()(
     addIdea: (idea) =>
       set((state) => {
         state.ideas[idea.id] = idea
-        db.ideas.add(idea).catch((err) => console.error('[DB] addIdea failed:', err))
+        writeAddIdea(idea).catch((err) => console.error('[DB] addIdea failed:', err))
       }),
 
     updateIdea: (id, updater) =>
@@ -41,7 +41,7 @@ export const useIdeaStore = create<IdeaState>()(
         const i = state.ideas[id]
         if (i) {
           updater(i)
-          db.ideas.put(i).catch((err) => console.error('[DB] updateIdea failed:', err))
+          writeUpdateIdea(i).catch((err) => console.error('[DB] updateIdea failed:', err))
         }
       }),
 
@@ -49,12 +49,7 @@ export const useIdeaStore = create<IdeaState>()(
       set((state) => {
         delete state.ideas[id]
         if (state.selectedId === id) state.selectedId = null
-        db.ideas.delete(id).catch((err) => console.error('[DB] deleteIdea failed:', err))
-      }),
-
-    selectIdea: (id) =>
-      set((state) => {
-        state.selectedId = id
+        writeDeleteIdea(id).catch((err) => console.error('[DB] deleteIdea failed:', err))
       }),
 
     archiveIdea: (id) =>
@@ -62,7 +57,7 @@ export const useIdeaStore = create<IdeaState>()(
         const i = state.ideas[id]
         if (i) {
           i.status = 'archived'
-          db.ideas.put(i).catch((err) => console.error('[DB] archiveIdea failed:', err))
+          writeUpdateIdea(i).catch((err) => console.error('[DB] archiveIdea failed:', err))
         }
       }),
 
@@ -71,7 +66,7 @@ export const useIdeaStore = create<IdeaState>()(
         const i = state.ideas[id]
         if (i) {
           i.linkedEntity = entity
-          db.ideas.put(i).catch((err) => console.error('[DB] linkIdea failed:', err))
+          writeUpdateIdea(i).catch((err) => console.error('[DB] linkIdea failed:', err))
         }
       }),
 
@@ -80,17 +75,21 @@ export const useIdeaStore = create<IdeaState>()(
         const i = state.ideas[id]
         if (i) {
           i.linkedEntity = undefined
-          db.ideas.put(i).catch((err) => console.error('[DB] unlinkIdea failed:', err))
+          writeUpdateIdea(i).catch((err) => console.error('[DB] unlinkIdea failed:', err))
         }
+      }),
+
+    selectIdea: (id) =>
+      set((state) => {
+        state.selectedId = id
       }),
   }))
 )
 
 // === Selector Hooks（性能优化）===
 
-export function useIdeaList(): Idea[] {
-  return useIdeaStore(useShallow((s) => Object.values(s.ideas)))
-}
+export const useIdeaList = () =>
+  useIdeaStore(useShallow((s) => Object.values(s.ideas)))
 
 export function useIdeaCount(): number {
   return useIdeaStore((s) => Object.keys(s.ideas).length)

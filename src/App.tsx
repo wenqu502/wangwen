@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { useInitData } from '@/hooks/use-init-data'
+import type { ModuleTab } from '@/types'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { LoadingFallback } from '@/components/LoadingFallback'
 import { SettingsModal } from '@/components/settings/SettingsModal'
@@ -51,6 +52,16 @@ const TAB_COMPONENTS = {
   report: ReportCanvas,
 } as const
 
+/** 有效的 Tab ID 集合（P1-010: 路由守卫） */
+const VALID_TAB_IDS = new Set<string>(TABS.map((t) => t.id))
+
+/** 从 URL hash 解析 Tab ID */
+function getTabFromHash(): ModuleTab | null {
+  const hash = window.location.hash.slice(1)
+  if (hash && VALID_TAB_IDS.has(hash)) return hash as ModuleTab
+  return null
+}
+
 function App() {
   const {
     currentTab,
@@ -65,6 +76,35 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+
+  // === P1-010: Hash 路由 ===
+  // 页面加载时从 URL hash 恢复 Tab
+  useEffect(() => {
+    const hashTab = getTabFromHash()
+    if (hashTab && hashTab !== currentTab) {
+      setCurrentTab(hashTab)
+    }
+  }, [])
+
+  // 监听 hash 变化（浏览器前进/后退）
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hashTab = getTabFromHash()
+      if (hashTab && hashTab !== currentTab) {
+        setCurrentTab(hashTab)
+      }
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [currentTab, setCurrentTab])
+
+  // Tab 切换时同步到 URL hash
+  useEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (hash !== currentTab) {
+      window.location.hash = currentTab
+    }
+  }, [currentTab])
 
   const handleExport = useCallback(async () => {
     if (!currentWorkId || isExporting) return
