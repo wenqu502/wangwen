@@ -39,8 +39,6 @@ export function executeTool(toolCall: ToolCall): ToolResult {
         return handleCreateSystem(toolCall.arguments)
       case 'createIdea':
         return handleCreateIdea(toolCall.arguments)
-      case 'switchTab':
-        return handleSwitchTab(toolCall.arguments)
       default:
         return {
           success: false,
@@ -58,6 +56,7 @@ export function executeTool(toolCall: ToolCall): ToolResult {
 function handleCreateCharacter(args: Record<string, unknown>): ToolResult {
   const store = useCharacterStore.getState()
   const now = new Date().toISOString()
+  const personalityArg = args.personality as Record<string, unknown> | undefined
 
   const character: Character = {
     id: generateCharacterId(),
@@ -67,12 +66,12 @@ function handleCreateCharacter(args: Record<string, unknown>): ToolResult {
     tags: Array.isArray(args.tags) ? args.tags.map(String) : [],
     appearance: String(args.appearance || ''),
     personality: {
-      keywords: Array.isArray(args.personality?.keywords)
-        ? args.personality.keywords.map(String)
+      keywords: Array.isArray(personalityArg?.keywords)
+        ? (personalityArg.keywords as unknown[]).map(String)
         : [],
-      surface: String(args.personality?.surface || ''),
-      inner: String(args.personality?.inner || ''),
-      stressResponse: String(args.personality?.stressResponse || ''),
+      surface: String(personalityArg?.surface || ''),
+      inner: String(personalityArg?.inner || ''),
+      stressResponse: String(personalityArg?.stressResponse || ''),
     },
     background: String(args.background || ''),
     trauma: args.trauma ? String(args.trauma) : undefined,
@@ -211,33 +210,41 @@ function handleCreateSystem(args: Record<string, unknown>): ToolResult {
     name: String(args.name || '未命名体系'),
     description: String(args.description || ''),
     branches: Array.isArray(args.branches)
-      ? args.branches.map((b: unknown, idx: number) => ({
-          id: `branch_${idx}`,
-          name: String((b as Record<string, unknown>).name || `分支${idx + 1}`),
-          levels: Array.isArray((b as Record<string, unknown>).levels)
-            ? (b as Record<string, unknown>).levels!.map((l: unknown, lidx: number) => ({
+      ? (args.branches as unknown[]).map((b: unknown, idx: number) => {
+          const branch = b as Record<string, unknown>
+          const levels = Array.isArray(branch.levels) ? (branch.levels as unknown[]) : []
+          return {
+            id: `branch_${idx}`,
+            name: String(branch.name || `分支${idx + 1}`),
+            levels: levels.map((l: unknown, lidx: number) => {
+              const level = l as Record<string, unknown>
+              return {
                 rank: lidx + 1,
-                name: String((l as Record<string, unknown>).name || `等级${lidx + 1}`),
-                description: String((l as Record<string, unknown>).description || ''),
-                abilities: Array.isArray((l as Record<string, unknown>).abilities)
-                  ? (l as Record<string, unknown>).abilities!.map(String)
+                name: String(level.name || `等级${lidx + 1}`),
+                description: String(level.description || ''),
+                abilities: Array.isArray(level.abilities)
+                  ? (level.abilities as unknown[]).map(String)
                   : [],
-                restrictions: Array.isArray((l as Record<string, unknown>).restrictions)
-                  ? (l as Record<string, unknown>).restrictions!.map(String)
+                restrictions: Array.isArray(level.restrictions)
+                  ? (level.restrictions as unknown[]).map(String)
                   : [],
-              }))
-            : [],
-        }))
+              }
+            }),
+          }
+        })
       : [],
     rules: Array.isArray(args.rules)
-      ? args.rules.map((r: unknown, idx: number) => ({
-          id: `rule_${idx}`,
-          description: String((r as Record<string, unknown>).description || ''),
-          severity: ((r as Record<string, unknown>).severity as 'hard' | 'soft') || 'soft',
-          exceptions: Array.isArray((r as Record<string, unknown>).exceptions)
-            ? (r as Record<string, unknown>).exceptions!.map(String)
-            : [],
-        }))
+      ? (args.rules as unknown[]).map((r: unknown, idx: number) => {
+          const rule = r as Record<string, unknown>
+          return {
+            id: `rule_${idx}`,
+            description: String(rule.description || ''),
+            severity: (rule.severity as 'hard' | 'soft') || 'soft',
+            exceptions: Array.isArray(rule.exceptions)
+              ? (rule.exceptions as unknown[]).map(String)
+              : [],
+          }
+        })
       : [],
     createdAt: now,
     updatedAt: now,
@@ -276,16 +283,3 @@ function handleCreateIdea(args: Record<string, unknown>): ToolResult {
   }
 }
 
-function handleSwitchTab(args: Record<string, unknown>): ToolResult {
-  const tab = String(args.tab)
-  const validTabs = ['character', 'plot', 'relation', 'system', 'idea']
-  if (!validTabs.includes(tab)) {
-    return { success: false, message: `无效的标签页: ${tab}` }
-  }
-
-  // 使用动态导入避免循环依赖
-  const { useAppStore } = require('@/stores/app-store')
-  useAppStore.getState().setCurrentTab(tab as 'character' | 'plot' | 'relation' | 'system' | 'idea')
-
-  return { success: true, message: `已切换到${tab}面板` }
-}

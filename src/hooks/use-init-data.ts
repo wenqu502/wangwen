@@ -20,8 +20,10 @@ export function useInitData(workId: string | null) {
       return
     }
 
+    const currentWorkId = workId
+
     async function loadAll() {
-      console.log('[Init] 开始加载数据，workId:', workId)
+      console.log('[Init] 开始加载数据，workId:', currentWorkId)
 
       const [
         characters,
@@ -30,11 +32,11 @@ export function useInitData(workId: string | null) {
         systems,
         ideas,
       ] = await Promise.all([
-        db.characters.where('workId').equals(workId).toArray(),
-        db.plotNodes.where('workId').equals(workId).toArray(),
-        db.relations.where('workId').equals(workId).toArray(),
-        db.systems.where('workId').equals(workId).toArray(),
-        db.ideas.where('workId').equals(workId).toArray(),
+        db.characters.where('workId').equals(currentWorkId).toArray(),
+        db.plotNodes.where('workId').equals(currentWorkId).toArray(),
+        db.relations.where('workId').equals(currentWorkId).toArray(),
+        db.systems.where('workId').equals(currentWorkId).toArray(),
+        db.ideas.where('workId').equals(currentWorkId).toArray(),
       ])
 
       useCharacterStore.getState().setCharacters(characters)

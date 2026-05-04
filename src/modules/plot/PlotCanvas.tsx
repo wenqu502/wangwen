@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect } from 'react'
 import {
   ReactFlow,
   Background,
@@ -152,8 +152,8 @@ export function PlotCanvas() {
   const selectedNode = useSelectedPlotNode()
   const { selectNode, addNode, deleteNode, updateNode } = usePlotStore()
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
   // 同步 store 数据到 React Flow
   useEffect(() => {
@@ -203,7 +203,7 @@ export function PlotCanvas() {
   // 节点位置变化时同步回 store
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
-      updateNode(node.id, (n) => {
+      updateNode(node.id, (_n) => {
         // 如果需要持久化位置，可以在这里更新 store
         // 当前 PlotNode 类型没有 position 字段，暂不持久化
         console.log('[PlotCanvas] Node moved:', node.id, node.position)
@@ -276,7 +276,7 @@ export function PlotCanvas() {
             <Controls />
             <MiniMap
               nodeColor={(node) => {
-                const data = node.data as PlotNodeData
+                const data = node.data as unknown as PlotNodeData
                 const status = data?.node?.status
                 if (status === 'written') return '#22c55e'
                 if (status === 'writing') return '#3b82f6'

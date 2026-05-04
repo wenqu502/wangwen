@@ -14,6 +14,7 @@ interface AppState {
   toggleChatPanel: () => void
   setIsLoading: (loading: boolean) => void
   addMessage: (msg: ChatMessage) => void
+  updateMessage: (id: string, content: string) => void
   clearMessages: () => void
 }
 
@@ -38,7 +39,7 @@ export const useAppStore = create<AppState>()(
       toggleChatPanel: () => set((s) => ({ isChatPanelOpen: !s.isChatPanelOpen })),
       setIsLoading: (loading) => set({ isLoading: loading }),
       addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
-      updateMessage: (id, content) =>
+      updateMessage: (id: string, content: string) =>
         set((s) => ({
           messages: s.messages.map((m) => (m.id === id ? { ...m, content } : m)),
         })),

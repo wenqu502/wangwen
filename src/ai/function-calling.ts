@@ -180,18 +180,4 @@ export const tools: ToolDefinition[] = [
       },
     },
   },
-  {
-    type: 'function',
-    function: {
-      name: 'switchTab',
-      description: '切换左侧可视化面板到指定模块。当用户说"看看角色","切换到剧情"等时调用。',
-      parameters: {
-        type: 'object',
-        properties: {
-          tab: { type: 'string', enum: ['character', 'plot', 'relation', 'system', 'idea'], description: '目标标签页' },
-        },
-        required: ['tab'],
-      },
-    },
-  },
 ]
