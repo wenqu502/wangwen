@@ -6,7 +6,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel'
 import { LoadingFallback } from '@/components/LoadingFallback'
 import { SettingsModal } from '@/components/settings/SettingsModal'
 import { cn } from '@/lib/utils'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Moon, Sun } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { exportWork } from '@/lib/export'
 import { SearchModal } from '@/components/search/SearchModal'
@@ -76,6 +76,10 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return document.documentElement.classList.contains('dark')
+  })
 
   // === P1-010: Hash 路由 ===
   // 页面加载时从 URL hash 恢复 Tab
@@ -106,6 +110,11 @@ function App() {
     }
   }, [currentTab])
 
+  // UI-002: 暗色模式切换
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [isDark])
+
   const handleExport = useCallback(async () => {
     if (!currentWorkId || isExporting) return
     setIsExporting(true)
@@ -122,8 +131,8 @@ function App() {
 
   if (!isReady) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-neutral-50">
-        <div className="flex flex-col items-center gap-3 text-neutral-400">
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <Loader2 className="w-8 h-8 animate-spin" />
           <p className="text-sm">加载数据中...</p>
         </div>
@@ -132,16 +141,16 @@ function App() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-neutral-50 overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">
       {/* 顶部导航栏 */}
-      <header className="h-[52px] flex items-center justify-between px-4 border-b border-neutral-200 bg-white shrink-0">
+      <header className="h-[52px] flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            <span className="font-semibold text-neutral-900">织文</span>
+            <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <span className="font-semibold text-foreground">织文</span>
           </div>
-          <div className="h-5 w-px bg-neutral-200" />
-          <button className="flex items-center gap-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition-colors">
+          <div className="h-5 w-px bg-border" />
+          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <span className="font-medium">
               {currentWorkId ? '当前作品' : '未选择作品'}
             </span>
@@ -152,7 +161,7 @@ function App() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded-md transition-colors"
           >
             <Search className="w-4 h-4" />
             <span>搜索</span>
@@ -160,26 +169,33 @@ function App() {
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded-md transition-colors disabled:opacity-50"
           >
             {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             <span>导出</span>
           </button>
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded-md transition-colors"
           >
             <Settings className="w-4 h-4" />
             <span>设置</span>
           </button>
-          <div className="h-5 w-px bg-neutral-200" />
+          <button
+            onClick={() => setIsDark((d) => !d)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded-md transition-colors"
+            aria-label={isDark ? '切换到亮色模式' : '切换到暗色模式'}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <div className="h-5 w-px bg-border" />
           <button
             onClick={toggleChatPanel}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors',
               isChatPanelOpen
-                ? 'text-indigo-600 bg-indigo-50'
-                : 'text-neutral-600 hover:bg-neutral-100'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                : 'text-muted-foreground hover:bg-accent'
             )}
           >
             {isChatPanelOpen ? (
@@ -206,7 +222,7 @@ function App() {
           </div>
 
           {/* 底部 Tab 切换 */}
-          <nav className="h-12 flex items-center px-4 gap-1 border-t border-neutral-200 bg-white shrink-0">
+          <nav className="h-12 flex items-center px-4 gap-1 border-t border-border bg-card shrink-0">
             {TABS.map((tab) => {
               const Icon = tab.icon
               const isActive = currentTab === tab.id
@@ -217,8 +233,8 @@ function App() {
                   className={cn(
                     'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-colors',
                     isActive
-                      ? 'text-indigo-600 bg-indigo-50'
-                      : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
+                      ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -231,7 +247,7 @@ function App() {
 
         {/* 右侧：AI 对话面板 */}
         {isChatPanelOpen && (
-          <aside className="w-[320px] border-l border-neutral-200 bg-white shrink-0 flex flex-col">
+          <aside className="w-[320px] border-l border-border bg-card shrink-0 flex flex-col">
             <ChatPanel />
           </aside>
         )}
