@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea } from '@/types'
+import type { Conversation } from '@/ai/types'
 
 /**
  * 业务数据库（P1-004: IndexedDB 分区）
@@ -19,6 +20,7 @@ class WangWenDB extends Dexie {
   relations!: Table<RelationEdge>
   systems!: Table<WorkSystem>
   ideas!: Table<Idea>
+  conversations!: Table<Conversation>
 
   constructor() {
     super('wangwen-db')
@@ -93,6 +95,17 @@ class WangWenDB extends Dexie {
       systems: 'id, workId, createdAt',
       // [workId+status] 复合索引的前缀 workId 可覆盖
       ideas: 'id, [workId+status], createdAt',
+    })
+
+    // === v4: 添加对话历史表 (P1-009: AI对话优化模块)
+    this.version(4).stores({
+      works: 'id, name, createdAt',
+      characters: 'id, [workId+name]',
+      plotNodes: 'id, [workId+status], createdAt',
+      relations: 'id, [workId+sourceId], [workId+targetId], createdAt',
+      systems: 'id, workId, createdAt',
+      ideas: 'id, [workId+status], createdAt',
+      conversations: 'id, workId, updatedAt',
     })
   }
 }

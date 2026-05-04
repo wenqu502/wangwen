@@ -9,6 +9,7 @@
 
 import { db } from './index'
 import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea } from '@/types'
+import type { Conversation } from '@/ai/types'
 
 // === 错误类型 ===
 

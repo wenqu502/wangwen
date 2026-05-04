@@ -29,3 +29,15 @@ export function generateSystemId(): string {
 export function generateIdeaId(): string {
   return generateId('idea')
 }
+
+export function generateConversationId(): string {
+  return generateId('conv')
+}
+
+export function generateMessageId(): string {
+  return generateId('msg')
+}
+
+export function generateBranchId(): string {
+  return generateId('branch')
+}

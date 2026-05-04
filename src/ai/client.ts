@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import OpenAI from 'openai'
-import { DEEPSEEK_CONFIG } from '@/config/env'
+import { AI_CONFIG } from '@/config/env'
 import type { AIChatOptions, AIStreamChunk, AIChatMessage } from './types'
 
 // === API Key 安全读取策略 ===
@@ -12,13 +12,13 @@ function getApiKey(): string {
   const fromStorage = localStorage.getItem(LS_KEY)
   if (fromStorage) return fromStorage
 
-  const fromEnv = DEEPSEEK_CONFIG.apiKey
+  const fromEnv = AI_CONFIG.apiKey
   if (fromEnv && fromEnv !== 'your_api_key_here') return fromEnv
 
   return ''
 }
 
-const BASE_URL = DEEPSEEK_CONFIG.baseURL
+const BASE_URL = AI_CONFIG.baseURL
 
 function createClient() {
   const apiKey = getApiKey()
@@ -43,17 +43,17 @@ export function clearApiKey(): void {
 
 export async function* chatStream(options: AIChatOptions): AsyncGenerator<AIStreamChunk> {
   if (!hasApiKey()) {
-    throw new Error('DeepSeek API Key 未配置，请在设置面板中输入您的 API Key')
+    throw new Error('AI API Key 未配置，请在设置面板中输入您的 API Key')
   }
 
   const client = createClient()
   const stream = await client.chat.completions.create({
-    model: DEEPSEEK_CONFIG.model,
+    model: AI_CONFIG.model,
     messages: options.messages as any,
     tools: options.tools as any,
     stream: true,
-    temperature: options.temperature ?? DEEPSEEK_CONFIG.temperature,
-    max_tokens: options.maxTokens ?? DEEPSEEK_CONFIG.maxTokens,
+    temperature: options.temperature ?? AI_CONFIG.temperature,
+    max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
   })
 
   for await (const chunk of stream) {
@@ -63,16 +63,16 @@ export async function* chatStream(options: AIChatOptions): AsyncGenerator<AIStre
 
 export async function chatOnce(options: AIChatOptions): Promise<string> {
   if (!hasApiKey()) {
-    throw new Error('DeepSeek API Key 未配置，请在设置面板中输入您的 API Key')
+    throw new Error('AI API Key 未配置，请在设置面板中输入您的 API Key')
   }
 
   const client = createClient()
   const response = await client.chat.completions.create({
-    model: DEEPSEEK_CONFIG.model,
+    model: AI_CONFIG.model,
     messages: options.messages as any,
     tools: options.tools as any,
-    temperature: options.temperature ?? DEEPSEEK_CONFIG.temperature,
-    max_tokens: options.maxTokens ?? DEEPSEEK_CONFIG.maxTokens,
+    temperature: options.temperature ?? AI_CONFIG.temperature,
+    max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
   })
 
   return response.choices[0]?.message?.content ?? ''
@@ -122,7 +122,7 @@ export function buildSystemPrompt(currentTab?: string): AIChatMessage {
 // === Mock / Demo Mode ===
 // 当没有配置 API Key 时，进入演示模式，模拟 AI 响应以便体验完整交互流程
 
-const MOCK_DELAY_MS = DEEPSEEK_CONFIG.mockDelayMs
+const MOCK_DELAY_MS = AI_CONFIG.mockDelayMs
 
 export function isMockMode(): boolean {
   return !hasApiKey()

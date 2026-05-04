@@ -7,20 +7,20 @@
  * 3. 运行时校验，缺失必填项时给出明确错误
  */
 
-/**  DeepSeek API 配置 */
-export const DEEPSEEK_CONFIG = {
-  /** API 基础地址，默认 DeepSeek 官方 */
-  baseURL: import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
+/**  AI API 配置 — 默认使用 Comet One API (Kimi-K2.6) */
+export const AI_CONFIG = {
+  /** API 基础地址 */
+  baseURL: import.meta.env.VITE_AI_BASE_URL || 'https://oneapi-comate.baidu-int.com/v1',
   /** 默认模型 */
-  model: import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat',
+  model: import.meta.env.VITE_AI_MODEL || 'Kimi-K2.6',
   /** 默认温度 */
-  temperature: Number(import.meta.env.VITE_DEEPSEEK_TEMPERATURE || '0.7'),
+  temperature: Number(import.meta.env.VITE_AI_TEMPERATURE || '0.7'),
   /** 默认最大 Token */
-  maxTokens: Number(import.meta.env.VITE_DEEPSEEK_MAX_TOKENS || '4096'),
+  maxTokens: Number(import.meta.env.VITE_AI_MAX_TOKENS || '4096'),
   /** 流式输出延迟（演示模式） */
   mockDelayMs: Number(import.meta.env.VITE_MOCK_DELAY_MS || '10'),
-  /** 开发环境 API Key（仅用于开发，生产应通过 UI 输入） */
-  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || '',
+  /** 默认 API Key — Comet One API 免费额度供用户体验 */
+  apiKey: import.meta.env.VITE_AI_API_KEY || 'sk-nU8nadCSx4pWpDwI2673EaC3FeCd48E3930a623d476bB226',
 } as const
 
 /** 应用配置 */
@@ -52,8 +52,8 @@ export function validateEnv(): string[] {
   const errors: string[] = []
 
   // 开发环境检查 API Key 是否硬编码
-  if (APP_CONFIG.isDev && DEEPSEEK_CONFIG.apiKey) {
-    console.warn('[Env] 检测到 VITE_DEEPSEEK_API_KEY 硬编码在环境变量中，建议通过 UI 设置面板输入')
+  if (APP_CONFIG.isDev && AI_CONFIG.apiKey) {
+    console.warn('[Env] 检测到 VITE_AI_API_KEY 硬编码在环境变量中，建议通过 UI 设置面板输入')
   }
 
   return errors

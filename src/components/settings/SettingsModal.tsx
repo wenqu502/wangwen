@@ -80,7 +80,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className="space-y-2 text-sm text-neutral-600">
                   <p>版本: v0.1.0 (MVP)</p>
                   <p>数据存储: 浏览器本地 (IndexedDB)</p>
-                  <p>AI 引擎: DeepSeek API</p>
+                  <p>AI 引擎: Comet One API (Kimi-K2.6)</p>
                 </div>
                 <div className="p-3 bg-neutral-50 rounded-lg text-xs text-neutral-500">
                   <p className="font-medium text-neutral-700 mb-1">隐私说明</p>
