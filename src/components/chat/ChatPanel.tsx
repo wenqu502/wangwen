@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { handleStreamingResponse } from '@/ai/streaming'
 import { createSystemPrompt } from '@/ai/client'
 import { tools } from '@/ai/function-calling'
+import { executeTool } from '@/ai/tool-executor'
 
 export function ChatPanel() {
   const { messages, addMessage, updateMessage, isLoading, setIsLoading } = useAppStore()
@@ -65,10 +66,22 @@ export function ChatPanel() {
         }
       )
 
-      // 流式完成后，如果有 toolCalls 则处理
+      // 流式完成后，如果有 toolCalls 则执行
       if (result.toolCalls.length > 0) {
         console.log('[ChatPanel] Tool calls:', result.toolCalls)
-        // TODO: 处理 tool calls，调用对应模块的 store 操作
+        const results = result.toolCalls.map((tc) => executeTool(tc))
+        const successCount = results.filter((r) => r.success).length
+        const failCount = results.length - successCount
+
+        // 在 assistant 消息后追加工具执行结果
+        const resultText = results.map((r) => (r.success ? `✅ ${r.message}` : `❌ ${r.message}`)).join('\n')
+        const currentMsg = useAppStore.getState().messages.find((m) => m.id === assistantMsgId)
+        if (currentMsg) {
+          updateMessage(
+            assistantMsgId,
+            `${currentMsg.content}\n\n**操作结果** (${successCount}成功${failCount > 0 ? `, ${failCount}失败` : ''}):\n${resultText}`
+          )
+        }
       }
     } catch (err) {
       updateMessage(

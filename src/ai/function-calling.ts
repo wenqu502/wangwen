@@ -5,14 +5,33 @@ export const tools: ToolDefinition[] = [
   {
     type: 'function',
     function: {
-      name: 'generateCharacter',
-      description: '根据用户描述生成角色档案',
+      name: 'createCharacter',
+      description: '创建一个完整的角色档案。当用户要求创建角色、生成人物时调用。',
       parameters: {
         type: 'object',
         properties: {
-          description: { type: 'string', description: '用户对角色的自然语言描述' },
+          name: { type: 'string', description: '角色姓名' },
+          aliases: { type: 'array', items: { type: 'string' }, description: '别名/绰号' },
+          tags: { type: 'array', items: { type: 'string' }, description: '标签，如["主角","剑修","复仇者"]' },
+          appearance: { type: 'string', description: '外貌描写，100-300字' },
+          personality: {
+            type: 'object',
+            description: '性格结构',
+            properties: {
+              keywords: { type: 'array', items: { type: 'string' }, description: '性格关键词' },
+              surface: { type: 'string', description: '表面性格' },
+              inner: { type: 'string', description: '内心性格' },
+              stressResponse: { type: 'string', description: '压力下的反应' },
+            },
+          },
+          background: { type: 'string', description: '身世背景' },
+          trauma: { type: 'string', description: '心理创伤（可选）' },
+          goals: { type: 'string', description: '目标动机（可选）' },
+          arc: { type: 'string', description: '人物弧光（可选）' },
+          quotes: { type: 'array', items: { type: 'string' }, description: '标志性台词' },
+          abilities: { type: 'array', items: { type: 'string' }, description: '能力/技能' },
         },
-        required: ['description'],
+        required: ['name', 'appearance', 'personality', 'background'],
       },
     },
   },
@@ -20,12 +39,37 @@ export const tools: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'updateCharacter',
-      description: '修改角色档案的指定字段',
+      description: '修改已有角色的指定字段。当用户要求修改某个角色的属性时调用。',
       parameters: {
         type: 'object',
         properties: {
           characterId: { type: 'string', description: '角色 ID' },
-          changes: { type: 'object', description: '要修改的字段和值' },
+          changes: {
+            type: 'object',
+            description: '要修改的字段，只包含需要修改的字段',
+            properties: {
+              name: { type: 'string' },
+              aliases: { type: 'array', items: { type: 'string' } },
+              tags: { type: 'array', items: { type: 'string' } },
+              appearance: { type: 'string' },
+              background: { type: 'string' },
+              trauma: { type: 'string' },
+              goals: { type: 'string' },
+              arc: { type: 'string' },
+              status: { type: 'string', enum: ['alive', 'dead', 'missing', 'sealed'] },
+              quotes: { type: 'array', items: { type: 'string' } },
+              abilities: { type: 'array', items: { type: 'string' } },
+              personality: {
+                type: 'object',
+                properties: {
+                  keywords: { type: 'array', items: { type: 'string' } },
+                  surface: { type: 'string' },
+                  inner: { type: 'string' },
+                  stressResponse: { type: 'string' },
+                },
+              },
+            },
+          },
         },
         required: ['characterId', 'changes'],
       },
@@ -34,82 +78,103 @@ export const tools: ToolDefinition[] = [
   {
     type: 'function',
     function: {
-      name: 'generatePlotSkeleton',
-      description: '根据故事梗概生成剧情骨架',
+      name: 'createPlotNode',
+      description: '在剧情树中创建一个新节点。当用户要求添加剧情、规划桥段时调用。',
       parameters: {
         type: 'object',
         properties: {
-          synopsis: { type: 'string', description: '故事梗概' },
-          chapterCount: { type: 'number', description: '预估章节数' },
+          title: { type: 'string', description: '节点标题，如"第三章：秘境开启"' },
+          summary: { type: 'string', description: '剧情摘要，50-200字' },
+          content: { type: 'string', description: '详细内容（可选）' },
+          type: { type: 'string', enum: ['trunk', 'branch', 'if', 'foreshadowing'], description: '节点类型' },
+          characters: { type: 'array', items: { type: 'string' }, description: '涉及的角色 ID 列表' },
+          location: { type: 'string', description: '发生地点（可选）' },
+          tags: { type: 'array', items: { type: 'string' }, description: '标签' },
+          parentIds: { type: 'array', items: { type: 'string' }, description: '父节点 ID 列表，用于建立层级关系' },
+          condition: { type: 'string', description: '触发条件（可选，用于分支/if节点）' },
         },
-        required: ['synopsis'],
+        required: ['title', 'summary'],
       },
     },
   },
   {
     type: 'function',
     function: {
-      name: 'addPlotNode',
-      description: '在剧情树中添加节点',
+      name: 'createRelation',
+      description: '创建两个角色之间的关系。当用户要求建立人物关系时调用。',
       parameters: {
         type: 'object',
         properties: {
-          parentId: { type: 'string', description: '父节点 ID' },
-          title: { type: 'string', description: '节点标题' },
-          summary: { type: 'string', description: '节点摘要' },
+          sourceId: { type: 'string', description: '源角色 ID' },
+          targetId: { type: 'string', description: '目标角色 ID' },
+          type: { type: 'string', description: '关系类型，如"师徒","仇敌","恋人"' },
+          description: { type: 'string', description: '关系描述' },
+          isHidden: { type: 'boolean', description: '是否为隐藏关系' },
         },
-        required: ['parentId', 'title', 'summary'],
+        required: ['sourceId', 'targetId', 'type', 'description'],
       },
     },
   },
   {
     type: 'function',
     function: {
-      name: 'inferRelations',
-      description: '根据角色档案推断关系网络',
+      name: 'createSystem',
+      description: '创建一个修炼/世界观体系。当用户要求设计等级体系、功法体系时调用。',
       parameters: {
         type: 'object',
         properties: {
-          characterIds: {
+          name: { type: 'string', description: '体系名称，如"玄天九变"' },
+          description: { type: 'string', description: '体系简介' },
+          branches: {
             type: 'array',
-            items: { type: 'string' },
-            description: '要分析的角色 ID 列表',
+            description: '分支体系',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: '分支名称' },
+                levels: {
+                  type: 'array',
+                  description: '等级列表',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', description: '等级名称' },
+                      description: { type: 'string', description: '等级描述' },
+                      abilities: { type: 'array', items: { type: 'string' }, description: '该等级解锁的能力' },
+                      restrictions: { type: 'array', items: { type: 'string' }, description: '该等级的限制' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          rules: {
+            type: 'array',
+            description: '体系规则',
+            items: {
+              type: 'object',
+              properties: {
+                description: { type: 'string', description: '规则描述' },
+                severity: { type: 'string', enum: ['hard', 'soft'], description: 'hard=不可违逆，soft=可灵活处理' },
+                exceptions: { type: 'array', items: { type: 'string' }, description: '例外情况' },
+              },
+            },
           },
         },
-        required: ['characterIds'],
+        required: ['name', 'description'],
       },
     },
   },
   {
     type: 'function',
     function: {
-      name: 'generateSystem',
-      description: '生成抽象化的分级体系',
-      parameters: {
-        type: 'object',
-        properties: {
-          description: { type: 'string', description: '体系描述' },
-          branchCount: { type: 'number', description: '分支数量' },
-          levelCount: { type: 'number', description: '每个分支的等级数' },
-        },
-        required: ['description'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'captureIdea',
-      description: '从用户消息中提取灵感便签',
+      name: 'createIdea',
+      description: '记录一个灵感便签。当用户提到有趣的创意、点子时调用。',
       parameters: {
         type: 'object',
         properties: {
           content: { type: 'string', description: '灵感内容' },
-          tags: {
-            type: 'array',
-            items: { type: 'string' },
-            description: '标签数组',
-          },
+          tags: { type: 'array', items: { type: 'string' }, description: '标签' },
         },
         required: ['content'],
       },
@@ -118,15 +183,14 @@ export const tools: ToolDefinition[] = [
   {
     type: 'function',
     function: {
-      name: 'validateConsistency',
-      description: '校验角色言行与人设的一致性',
+      name: 'switchTab',
+      description: '切换左侧可视化面板到指定模块。当用户说"看看角色","切换到剧情"等时调用。',
       parameters: {
         type: 'object',
         properties: {
-          characterId: { type: 'string', description: '角色 ID' },
-          text: { type: 'string', description: '待检测文本' },
+          tab: { type: 'string', enum: ['character', 'plot', 'relation', 'system', 'idea'], description: '目标标签页' },
         },
-        required: ['characterId', 'text'],
+        required: ['tab'],
       },
     },
   },
