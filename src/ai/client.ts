@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import OpenAI from 'openai'
-import { DEEPSEEK_CONFIG, FEATURE_FLAGS } from '@/config/env'
+import { DEEPSEEK_CONFIG } from '@/config/env'
 import type { AIChatOptions, AIStreamChunk, AIChatMessage } from './types'
 
 // === API Key 安全读取策略 ===
@@ -12,7 +12,7 @@ function getApiKey(): string {
   const fromStorage = localStorage.getItem(LS_KEY)
   if (fromStorage) return fromStorage
 
-  const fromEnv = import.meta.env.VITE_DEEPSEEK_API_KEY
+  const fromEnv = DEEPSEEK_CONFIG.apiKey
   if (fromEnv && fromEnv !== 'your_api_key_here') return fromEnv
 
   return ''

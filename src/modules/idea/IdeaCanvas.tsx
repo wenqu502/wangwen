@@ -17,7 +17,7 @@ export function IdeaCanvas() {
   const [addingTagFor, setAddingTagFor] = useState<string | null>(null)
   const [newTag, setNewTag] = useState('')
   const [showArchived, setShowArchived] = useState(false)
-  const textareaRef = useRefRef<HTMLTextAreaElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const pendingList = ideaList.filter((i) => i.status !== 'archived')
   const archivedList = ideaList.filter((i) => i.status === 'archived')
@@ -82,8 +82,8 @@ export function IdeaCanvas() {
       {/* 头部 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-neutral-900">灵感便签</h2>
-          <span className="text-xs text-neutral-400">
+          <h2 className="text-lg font-semibold text-foreground">灵感便签</h2>
+          <span className="text-xs text-muted-foreground">
             {pendingList.length} 待处理 / {archivedList.length} 已归档
           </span>
         </div>
@@ -94,7 +94,7 @@ export function IdeaCanvas() {
               'flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors',
               showArchived
                 ? 'bg-indigo-50 text-indigo-600'
-                : 'text-neutral-500 hover:bg-neutral-100'
+                : 'text-muted-foreground hover:bg-accent'
             )}
           >
             <Archive className="w-3.5 h-3.5" />
@@ -114,7 +114,7 @@ export function IdeaCanvas() {
         <div className="flex-1 flex flex-col items-center justify-center text-center text-neutral-400 space-y-3">
           <Lightbulb className="w-16 h-16" />
           <div>
-            <p className="text-neutral-500 font-medium">还没有灵感便签</p>
+            <p className="text-muted-foreground font-medium">还没有灵感便签</p>
             <p className="text-sm mt-1">在右侧 AI 面板随口提到点子，我会自动提取</p>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function IdeaCanvas() {
                   className={cn(
                     'rounded-lg p-4 transition-all border',
                     isArchived
-                      ? 'bg-neutral-50 border-neutral-200 opacity-60'
+                      ? 'bg-muted border-neutral-200 opacity-60'
                       : 'bg-yellow-50 border-yellow-200 hover:shadow-md'
                   )}
                 >
@@ -142,7 +142,7 @@ export function IdeaCanvas() {
                         ref={textareaRef}
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
-                        className="w-full text-sm text-neutral-800 bg-white/80 rounded-md p-2 outline-none resize-none min-h-[60px] border border-yellow-200 focus:border-yellow-400"
+                        className="w-full text-sm text-card-foreground bg-card/80 rounded-md p-2 outline-none resize-none min-h-[60px] border border-yellow-200 focus:border-yellow-400"
                         placeholder="写下你的灵感..."
                         autoFocus
                         onKeyDown={(e) => {
@@ -164,7 +164,7 @@ export function IdeaCanvas() {
                         </button>
                         <button
                           onClick={handleCancelEdit}
-                          className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 rounded"
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:bg-accent rounded"
                         >
                           <X className="w-3 h-3" />
                           取消
@@ -178,7 +178,7 @@ export function IdeaCanvas() {
                     <div
                       onClick={() => !isArchived && handleStartEdit(idea)}
                       className={cn(
-                        'text-sm text-neutral-800 min-h-[40px] cursor-text',
+                        'text-sm text-card-foreground min-h-[40px] cursor-text',
                         !idea.content && 'text-neutral-400 italic'
                       )}
                     >
@@ -196,7 +196,7 @@ export function IdeaCanvas() {
                           className={cn(
                             'text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5',
                             isArchived
-                              ? 'bg-neutral-100 text-neutral-500'
+                              ? 'bg-neutral-100 text-muted-foreground'
                               : 'bg-yellow-100 text-yellow-700'
                           )}
                         >

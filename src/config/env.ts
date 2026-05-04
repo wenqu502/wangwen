@@ -19,6 +19,8 @@ export const DEEPSEEK_CONFIG = {
   maxTokens: Number(import.meta.env.VITE_DEEPSEEK_MAX_TOKENS || '4096'),
   /** 流式输出延迟（演示模式） */
   mockDelayMs: Number(import.meta.env.VITE_MOCK_DELAY_MS || '10'),
+  /** 开发环境 API Key（仅用于开发，生产应通过 UI 输入） */
+  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || '',
 } as const
 
 /** 应用配置 */
@@ -50,7 +52,7 @@ export function validateEnv(): string[] {
   const errors: string[] = []
 
   // 开发环境检查 API Key 是否硬编码
-  if (APP_CONFIG.isDev && import.meta.env.VITE_DEEPSEEK_API_KEY) {
+  if (APP_CONFIG.isDev && DEEPSEEK_CONFIG.apiKey) {
     console.warn('[Env] 检测到 VITE_DEEPSEEK_API_KEY 硬编码在环境变量中，建议通过 UI 设置面板输入')
   }
 

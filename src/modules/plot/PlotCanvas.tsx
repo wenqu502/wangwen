@@ -43,10 +43,10 @@ function PlotNodeCard({ data, selected }: { data: PlotNodeData; selected?: boole
   return (
     <div
       className={cn(
-        'w-[180px] rounded-lg border bg-white shadow-sm transition-all',
+        'w-[180px] rounded-lg border bg-card shadow-sm transition-all',
         selected
           ? 'border-indigo-400 ring-2 ring-indigo-100 shadow-md'
-          : 'border-neutral-200 hover:border-neutral-300',
+          : 'border-border hover:border-border',
         isAbandoned && 'opacity-50'
       )}
       onClick={() => onSelect(node.id)}
@@ -56,7 +56,7 @@ function PlotNodeCard({ data, selected }: { data: PlotNodeData; selected?: boole
 
       <div className="p-3">
         <div className="flex items-start justify-between gap-1">
-          <h4 className={cn('text-sm font-semibold text-neutral-900 truncate flex-1', isAbandoned && 'line-through')}>
+          <h4 className={cn('text-sm font-semibold text-foreground truncate flex-1', isAbandoned && 'line-through')}>
             {node.title}
           </h4>
           <button
@@ -70,7 +70,7 @@ function PlotNodeCard({ data, selected }: { data: PlotNodeData; selected?: boole
           </button>
         </div>
 
-        <p className={cn('text-xs text-neutral-500 mt-1 line-clamp-2', isAbandoned && 'line-through')}>
+        <p className={cn('text-xs text-muted-foreground mt-1 line-clamp-2', isAbandoned && 'line-through')}>
           {node.summary}
         </p>
 
@@ -240,7 +240,7 @@ export function PlotCanvas() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-neutral-900">剧情分支树</h2>
+        <h2 className="text-lg font-semibold text-foreground">剧情分支树</h2>
         <button
           onClick={handleCreateNode}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
@@ -251,15 +251,15 @@ export function PlotCanvas() {
       </div>
 
       {!hasNodes ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center text-neutral-400 space-y-3">
+        <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
           <GitBranch className="w-16 h-16" />
           <div>
-            <p className="text-neutral-500 font-medium">还没有剧情节点</p>
+            <p className="text-muted-foreground font-medium">还没有剧情节点</p>
             <p className="text-sm mt-1">在右侧 AI 面板说"帮我规划剧情..."</p>
           </div>
         </div>
       ) : (
-        <div className="flex-1 rounded-xl border border-neutral-200 overflow-hidden bg-neutral-50">
+        <div className="flex-1 rounded-xl border border-border overflow-hidden bg-muted">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -285,7 +285,7 @@ export function PlotCanvas() {
                 if (status === 'abandoned') return '#ef4444'
                 return '#9ca3af'
               }}
-              className="!bg-white !border !border-neutral-200 !rounded-lg"
+              className="!bg-card !border !border-border !rounded-lg"
             />
           </ReactFlow>
         </div>

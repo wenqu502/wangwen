@@ -51,7 +51,7 @@ export function SystemCanvas() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-neutral-900">体系管理</h2>
+        <h2 className="text-lg font-semibold text-foreground">体系管理</h2>
         <button
           onClick={handleCreateSystem}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
@@ -62,10 +62,10 @@ export function SystemCanvas() {
       </div>
 
       {systemList.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center text-neutral-400 space-y-3">
+        <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
           <Layers className="w-16 h-16" />
           <div>
-            <p className="text-neutral-500 font-medium">还没有体系设定</p>
+            <p className="text-muted-foreground font-medium">还没有体系设定</p>
             <p className="text-sm mt-1">在右侧 AI 面板说"帮我设计一个...体系"</p>
           </div>
         </div>
@@ -74,19 +74,19 @@ export function SystemCanvas() {
           {systemList.map((system) => {
             const isExpanded = expandedIds.has(system.id)
             return (
-              <div key={system.id} className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+              <div key={system.id} className="bg-card rounded-xl border border-border overflow-hidden">
                 {/* 体系标题 */}
                 <div
-                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-neutral-50"
+                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted"
                   onClick={() => toggleExpand(system.id)}
                 >
                   <div className="flex items-center gap-3">
-                    <button className="text-neutral-400">
+                    <button className="text-muted-foreground">
                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
                     <div>
-                      <h3 className="font-semibold text-neutral-900">{system.name}</h3>
-                      <p className="text-xs text-neutral-500">{system.description}</p>
+                      <h3 className="font-semibold text-foreground">{system.name}</h3>
+                      <p className="text-xs text-muted-foreground">{system.description}</p>
                     </div>
                   </div>
                   <button
@@ -106,19 +106,19 @@ export function SystemCanvas() {
                     {/* 分支列表 */}
                     {system.branches.map((branch) => (
                       <div key={branch.id} className="border border-neutral-100 rounded-lg p-3">
-                        <h4 className="text-sm font-semibold text-neutral-800 mb-2">{branch.name}</h4>
+                        <h4 className="text-sm font-semibold text-card-foreground mb-2">{branch.name}</h4>
                         <div className="space-y-2">
                           {branch.levels.map((level) => (
                             <div
                               key={level.rank}
-                              className="flex items-center gap-3 py-2 px-3 bg-neutral-50 rounded-md"
+                              className="flex items-center gap-3 py-2 px-3 bg-muted rounded-md"
                             >
                               <span className="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-600 text-xs font-bold rounded-full shrink-0">
                                 T{level.rank}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-neutral-800">{level.name}</p>
-                                <p className="text-xs text-neutral-500 truncate">{level.description}</p>
+                                <p className="text-sm font-medium text-card-foreground">{level.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{level.description}</p>
                               </div>
                               {level.abilities.length > 0 && (
                                 <div className="flex gap-1 shrink-0">
@@ -138,7 +138,7 @@ export function SystemCanvas() {
                     {/* 规则列表 */}
                     {system.rules.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-neutral-800 flex items-center gap-1">
+                        <h4 className="text-sm font-semibold text-card-foreground flex items-center gap-1">
                           <Shield className="w-3.5 h-3.5" />
                           规则
                         </h4>
@@ -152,7 +152,7 @@ export function SystemCanvas() {
                                 : 'bg-yellow-50 text-yellow-700'
                             )}
                           >
-                            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-white/60">
+                            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-card/60">
                               {rule.severity === 'hard' ? '硬性' : '软性'}
                             </span>
                             <span>{rule.description}</span>

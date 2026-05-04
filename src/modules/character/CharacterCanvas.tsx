@@ -131,11 +131,11 @@ export function CharacterCanvas() {
       {/* 左侧角色列表 */}
       <div className="w-64 flex flex-col gap-3 shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-neutral-900">角色小像</h2>
+          <h2 className="text-lg font-semibold text-foreground">角色小像</h2>
           <div className="flex gap-1">
             <button
               onClick={handleCreateMock}
-              className="p-1.5 text-neutral-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
               title="手动创建"
               aria-label="手动创建"
             >
@@ -150,7 +150,7 @@ export function CharacterCanvas() {
                   timestamp: Date.now(),
                 })
               }}
-              className="p-1.5 text-neutral-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
               title="AI 创建"
             >
               <Sparkles className="w-4 h-4" />
@@ -159,7 +159,7 @@ export function CharacterCanvas() {
         </div>
 
         {characterList.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-neutral-400 space-y-2">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-muted-foreground space-y-2">
             <User className="w-10 h-10" />
             <p className="text-sm">还没有角色</p>
             <p className="text-xs">在右侧 AI 面板说"帮我创建一个..."</p>
@@ -174,7 +174,7 @@ export function CharacterCanvas() {
                   'w-full text-left p-3 rounded-lg border transition-all',
                   selectedId === char.id
                     ? 'border-indigo-300 bg-indigo-50 shadow-sm'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300'
+                    : 'border-border bg-card hover:border-border'
                 )}
               >
                 <div className="flex items-center gap-2">
@@ -182,10 +182,10 @@ export function CharacterCanvas() {
                     {char.name.charAt(0)}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-sm text-neutral-900 truncate">
+                    <p className="font-medium text-sm text-foreground truncate">
                       {char.name}
                     </p>
-                    <p className="text-xs text-neutral-500 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {char.tags.join(' · ') || '未分类'}
                     </p>
                   </div>
@@ -199,7 +199,7 @@ export function CharacterCanvas() {
       {/* 右侧角色详情 */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         {selected ? (
-          <div className="bg-white rounded-xl border border-neutral-200 p-6 space-y-6">
+          <div className="bg-card rounded-xl border border-border p-6 space-y-6">
             {/* 头部信息 */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -244,23 +244,23 @@ export function CharacterCanvas() {
                     <input
                       value={editForm.name || ''}
                       onChange={(e) => updateField('name', e.target.value)}
-                      className="text-xl font-bold text-neutral-900 border-b border-neutral-300 outline-none bg-transparent w-full"
+                      className="text-xl font-bold text-foreground border-b border-border outline-none bg-transparent w-full"
                       placeholder="角色名"
                     />
                   ) : (
-                    <h3 className="text-xl font-bold text-neutral-900">{selected.name}</h3>
+                    <h3 className="text-xl font-bold text-foreground">{selected.name}</h3>
                   )}
                   {isEditing ? (
                     <input
                       value={(editForm.aliases || []).join(' / ')}
                       onChange={(e) =>
-                        updateField('aliases', e.target.value.split(/[\/，,]/).map((s) => s.trim()).filter(Boolean))
+                        updateField('aliases', e.target.value.split(/[/，,]/).map((s) => s.trim()).filter(Boolean))
                       }
-                      className="text-sm text-neutral-500 border-b border-neutral-300 outline-none bg-transparent w-full mt-1"
+                      className="text-sm text-muted-foreground border-b border-border outline-none bg-transparent w-full mt-1"
                       placeholder="别名（用 / 分隔）"
                     />
                   ) : (
-                    <p className="text-sm text-neutral-500">
+                    <p className="text-sm text-muted-foreground">
                       {selected.aliases.join(' / ') || '无别名'}
                     </p>
                   )}
@@ -271,7 +271,7 @@ export function CharacterCanvas() {
                   <button
                     onClick={startEdit}
                     aria-label="编辑角色"
-                    className="p-2 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                    className="p-2 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -287,7 +287,7 @@ export function CharacterCanvas() {
                     <button
                       onClick={cancelEdit}
                       aria-label="取消编辑"
-                      className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-md transition-colors"
+                      className="p-2 text-muted-foreground hover:text-muted-foreground hover:bg-accent rounded-md transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -296,7 +296,7 @@ export function CharacterCanvas() {
                 <button
                   onClick={() => deleteCharacter(selected.id)}
                   aria-label="删除角色"
-                  className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -330,7 +330,7 @@ export function CharacterCanvas() {
                 <select
                   value={editForm.status || 'alive'}
                   onChange={(e) => updateField('status', e.target.value as Character['status'])}
-                  className="text-sm px-2 py-1 border border-neutral-200 rounded-md bg-white"
+                  className="text-sm px-2 py-1 border border-border rounded-md bg-card"
                 >
                   {STATUS_OPTIONS.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -370,7 +370,7 @@ export function CharacterCanvas() {
 
             {/* 经典台词 */}
             <div>
-              <h4 className="text-sm font-semibold text-neutral-700 mb-2">经典台词</h4>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2">经典台词</h4>
               {isEditing ? (
                 <ArrayEditorBlock
                   items={editForm.quotes || []}
@@ -383,19 +383,19 @@ export function CharacterCanvas() {
               ) : selected.quotes.length > 0 ? (
                 <div className="space-y-2">
                   {selected.quotes.map((quote, i) => (
-                    <p key={i} className="text-sm text-neutral-600 italic pl-3 border-l-2 border-indigo-200">
+                    <p key={i} className="text-sm text-muted-foreground italic pl-3 border-l-2 border-indigo-200">
                       "{quote}"
                     </p>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-neutral-400 italic">暂无台词</p>
+                <p className="text-sm text-muted-foreground italic">暂无台词</p>
               )}
             </div>
 
             {/* 能力/技能 */}
             <div>
-              <h4 className="text-sm font-semibold text-neutral-700 mb-2">能力 / 技能</h4>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2">能力 / 技能</h4>
               {isEditing ? (
                 <ArrayEditorBlock
                   items={editForm.abilities || []}
@@ -414,15 +414,15 @@ export function CharacterCanvas() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-neutral-400 italic">暂无能力记录</p>
+                <p className="text-sm text-muted-foreground italic">暂无能力记录</p>
               )}
             </div>
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 space-y-3">
+          <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
             <User className="w-16 h-16" />
             <div>
-              <p className="text-neutral-500 font-medium">选择一个角色查看详情</p>
+              <p className="text-muted-foreground font-medium">选择一个角色查看详情</p>
               <p className="text-sm mt-1">或在左侧创建新角色</p>
             </div>
           </div>
@@ -444,21 +444,21 @@ function StatusBadge({ status }: { status: Character['status'] }) {
 
 function InfoBlock({ label, content }: { label: string; content: string }) {
   return (
-    <div className="bg-neutral-50 rounded-lg p-3">
-      <p className="text-xs font-medium text-neutral-500 mb-1">{label}</p>
-      <p className="text-sm text-neutral-800">{content}</p>
+    <div className="bg-muted rounded-lg p-3">
+      <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm text-card-foreground">{content}</p>
     </div>
   )
 }
 
 function EditBlock({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="bg-neutral-50 rounded-lg p-3">
-      <p className="text-xs font-medium text-neutral-500 mb-1">{label}</p>
+    <div className="bg-muted rounded-lg p-3">
+      <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full text-sm text-neutral-800 bg-transparent outline-none resize-none h-16"
+        className="w-full text-sm text-card-foreground bg-transparent outline-none resize-none h-16"
         placeholder={`填写${label}...`}
       />
     </div>
@@ -505,7 +505,7 @@ function ArrayEditorInline({
       ))}
       <button
         onClick={onAdd}
-        className="text-xs px-2 py-0.5 rounded-full border border-dashed border-neutral-300 text-neutral-500 hover:bg-neutral-50"
+        className="text-xs px-2 py-0.5 rounded-full border border-dashed border-border text-muted-foreground hover:bg-muted"
       >
         + {placeholder}
       </button>
@@ -536,12 +536,12 @@ function ArrayEditorBlock({
           <input
             value={item}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 text-sm px-3 py-2 border border-neutral-200 rounded-md bg-white outline-none focus:border-indigo-300"
+            className="flex-1 text-sm px-3 py-2 border border-border rounded-md bg-card outline-none focus:border-indigo-300"
             placeholder={placeholder}
           />
           <button
             onClick={() => onRemove(i)}
-            className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>

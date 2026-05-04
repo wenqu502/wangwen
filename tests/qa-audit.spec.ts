@@ -17,7 +17,7 @@ test.describe('🔍 QA 全面走查', () => {
     await page.waitForSelector('text=角色小像', { timeout: 15000 })
   })
 
-  test.afterEach(async ({}, testInfo) => {
+  test.afterEach(async ({ page: _page }, testInfo) => {
     if (issues.length > 0) {
       console.log(`\n=== ${testInfo.title} 期间的错误 ===`)
       issues.forEach((i) => console.log(i))

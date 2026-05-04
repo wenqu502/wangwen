@@ -1,6 +1,17 @@
 import Dexie, { type Table } from 'dexie'
 import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea } from '@/types'
 
+/**
+ * 业务数据库（P1-004: IndexedDB 分区）
+ *
+ * 分区策略：
+ * - wangwen-db（此文件）: 存储业务数据，使用 Dexie + IndexedDB
+ *   包含：作品、角色、剧情节点、关系、体系、灵感
+ * - wangwen-app-store（src/stores/app-store.ts）: 存储应用状态，使用 zustand persist + localStorage
+ *   包含：当前作品ID、当前Tab、面板开关、消息记录
+ *
+ * 两者完全隔离，禁止交叉引用。
+ */
 class WangWenDB extends Dexie {
   works!: Table<Work>
   characters!: Table<Character>

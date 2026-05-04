@@ -55,14 +55,14 @@ export function RelationCanvas() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-neutral-900">人物关系图</h2>
+        <h2 className="text-lg font-semibold text-foreground">人物关系图</h2>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-neutral-100 rounded-md p-0.5">
+          <div className="flex items-center bg-muted rounded-md p-0.5">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
                 'flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors',
-                viewMode === 'list' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+                viewMode === 'list' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <List className="w-3.5 h-3.5" />
@@ -72,7 +72,7 @@ export function RelationCanvas() {
               onClick={() => setViewMode('graph')}
               className={cn(
                 'flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors',
-                viewMode === 'graph' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+                viewMode === 'graph' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -83,7 +83,7 @@ export function RelationCanvas() {
             onClick={() => setShowHidden(!showHidden)}
             className={cn(
               'flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors',
-              showHidden ? 'bg-indigo-50 text-indigo-600' : 'text-neutral-500 hover:bg-neutral-100'
+              showHidden ? 'bg-indigo-50 text-indigo-600' : 'text-muted-foreground hover:bg-accent'
             )}
           >
             {showHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -100,15 +100,15 @@ export function RelationCanvas() {
       </div>
 
       {edgeList.length === 0 && !isAdding ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center text-neutral-400 space-y-3">
+        <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
           <Network className="w-16 h-16" />
           <div>
-            <p className="text-neutral-500 font-medium">还没有关系数据</p>
+            <p className="text-muted-foreground font-medium">还没有关系数据</p>
             <p className="text-sm mt-1">在右侧 AI 面板说"梳理一下人物关系..."</p>
           </div>
         </div>
       ) : viewMode === 'graph' ? (
-        <div className="flex-1 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+        <div className="flex-1 overflow-hidden rounded-xl border border-border bg-card">
           <RelationGraph
             characters={characterList}
             edges={filteredEdges}
@@ -118,13 +118,13 @@ export function RelationCanvas() {
         <div className="flex-1 flex flex-col gap-3 overflow-hidden">
           {/* 添加关系表单 */}
           {isAdding && (
-            <div className="bg-white rounded-lg border border-neutral-200 p-4 space-y-3 shrink-0">
+            <div className="bg-card rounded-lg border border-border p-4 space-y-3 shrink-0">
               <h3 className="text-sm font-semibold text-neutral-800">新建关系</h3>
               <div className="grid grid-cols-2 gap-3">
                 <select
                   value={newRelation.sourceId}
                   onChange={(e) => setNewRelation({ ...newRelation, sourceId: e.target.value })}
-                  className="text-sm px-3 py-2 border border-neutral-200 rounded-md bg-white"
+                  className="text-sm px-3 py-2 border border-border rounded-md bg-card"
                 >
                   <option value="">选择角色 A</option>
                   {characterList.map((c) => (
@@ -134,7 +134,7 @@ export function RelationCanvas() {
                 <select
                   value={newRelation.targetId}
                   onChange={(e) => setNewRelation({ ...newRelation, targetId: e.target.value })}
-                  className="text-sm px-3 py-2 border border-neutral-200 rounded-md bg-white"
+                  className="text-sm px-3 py-2 border border-border rounded-md bg-card"
                 >
                   <option value="">选择角色 B</option>
                   {characterList.map((c) => (
@@ -146,7 +146,7 @@ export function RelationCanvas() {
                 <select
                   value={newRelation.type}
                   onChange={(e) => setNewRelation({ ...newRelation, type: e.target.value })}
-                  className="text-sm px-3 py-2 border border-neutral-200 rounded-md bg-white"
+                  className="text-sm px-3 py-2 border border-border rounded-md bg-card"
                 >
                   {PRESET_RELATION_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -157,7 +157,7 @@ export function RelationCanvas() {
                   placeholder="关系描述（可选）"
                   value={newRelation.description}
                   onChange={(e) => setNewRelation({ ...newRelation, description: e.target.value })}
-                  className="flex-1 text-sm px-3 py-2 border border-neutral-200 rounded-md"
+                  className="flex-1 text-sm px-3 py-2 border border-border rounded-md"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export function RelationCanvas() {
                   onChange={(e) => setNewRelation({ ...newRelation, isHidden: e.target.checked })}
                   className="w-4 h-4"
                 />
-                <label htmlFor="isHidden" className="text-sm text-neutral-600">隐藏关系</label>
+                <label htmlFor="isHidden" className="text-sm text-muted-foreground">隐藏关系</label>
               </div>
               <div className="flex gap-2">
                 <button
@@ -179,7 +179,7 @@ export function RelationCanvas() {
                 </button>
                 <button
                   onClick={() => setIsAdding(false)}
-                  className="px-4 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-md"
+                  className="px-4 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded-md"
                 >
                   取消
                 </button>
@@ -193,15 +193,15 @@ export function RelationCanvas() {
               <div
                 key={edge.id}
                 className={cn(
-                  'bg-white rounded-lg border p-3 flex items-center justify-between',
-                  edge.isHidden ? 'border-dashed border-neutral-300' : 'border-neutral-200'
+                  'bg-card rounded-lg border p-3 flex items-center justify-between',
+                  edge.isHidden ? 'border-dashed border-border' : 'border-border'
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-neutral-900">{getCharacterName(edge.sourceId)}</span>
-                    <span className="text-xs text-neutral-400">→</span>
-                    <span className="text-sm font-medium text-neutral-900">{getCharacterName(edge.targetId)}</span>
+                    <span className="text-sm font-medium text-foreground">{getCharacterName(edge.sourceId)}</span>
+                    <span className="text-xs text-muted-foreground">→</span>
+                    <span className="text-sm font-medium text-foreground">{getCharacterName(edge.targetId)}</span>
                   </div>
                   <span className={cn(
                     'text-xs px-2 py-0.5 rounded-full font-medium',
@@ -212,7 +212,7 @@ export function RelationCanvas() {
                     {edge.type}
                   </span>
                   {edge.description && (
-                    <span className="text-xs text-neutral-500">{edge.description}</span>
+                    <span className="text-xs text-muted-foreground">{edge.description}</span>
                   )}
                   {edge.isHidden && (
                     <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded">隐藏</span>

@@ -55,12 +55,15 @@ const TAB_COMPONENTS = {
 /** 有效的 Tab ID 集合（P1-010: 路由守卫） */
 const VALID_TAB_IDS = new Set<string>(TABS.map((t) => t.id))
 
-/** 从 URL hash 解析 Tab ID */
+/** 从 URL hash 解析 Tab ID（P1-010: 路由守卫） */
 function getTabFromHash(): ModuleTab | null {
   const hash = window.location.hash.slice(1)
   if (hash && VALID_TAB_IDS.has(hash)) return hash as ModuleTab
   return null
 }
+
+/** 默认 Tab（无效 hash 时回退） */
+const DEFAULT_TAB: ModuleTab = 'character'
 
 function App() {
   const {
@@ -78,24 +81,39 @@ function App() {
   const [isExporting, setIsExporting] = useState(false)
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false
-    return document.documentElement.classList.contains('dark')
+    const saved = localStorage.getItem('wangwen-theme')
+    if (saved === 'dark') return true
+    if (saved === 'light') return false
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
   })
 
-  // === P1-010: Hash 路由 ===
-  // 页面加载时从 URL hash 恢复 Tab
+  // === P1-010: Hash 路由 + 404 回退 ===
+  // 页面加载时从 URL hash 恢复 Tab，无效 hash 回退到默认
   useEffect(() => {
     const hashTab = getTabFromHash()
     if (hashTab && hashTab !== currentTab) {
       setCurrentTab(hashTab)
+    } else if (!hashTab && window.location.hash.slice(1)) {
+      // hash 存在但无效，清除并回退到默认
+      window.location.hash = DEFAULT_TAB
+      if (currentTab !== DEFAULT_TAB) {
+        setCurrentTab(DEFAULT_TAB)
+      }
     }
   }, [])
 
-  // 监听 hash 变化（浏览器前进/后退）
+  // 监听 hash 变化（浏览器前进/后退），无效 hash 回退到默认
   useEffect(() => {
     const handleHashChange = () => {
       const hashTab = getTabFromHash()
       if (hashTab && hashTab !== currentTab) {
         setCurrentTab(hashTab)
+      } else if (!hashTab && window.location.hash.slice(1)) {
+        // hash 存在但无效，回退到默认
+        window.location.hash = DEFAULT_TAB
+        if (currentTab !== DEFAULT_TAB) {
+          setCurrentTab(DEFAULT_TAB)
+        }
       }
     }
     window.addEventListener('hashchange', handleHashChange)
@@ -110,10 +128,62 @@ function App() {
     }
   }, [currentTab])
 
-  // UI-002: 暗色模式切换
+  // UI-002: 暗色模式切换 + localStorage 持久化
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
+    localStorage.setItem('wangwen-theme', isDark ? 'dark' : 'light')
   }, [isDark])
+
+  // 监听系统主题变化（仅在用户未手动设置时跟随）
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('wangwen-theme')) {
+        setIsDark(e.matches)
+      }
+    }
+    mq.addEventListener('change', handleChange)
+    return () => mq.removeEventListener('change', handleChange)
+  }, [])
+
+  // 全局键盘快捷键
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey
+      const target = e.target as HTMLElement
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+
+      // Esc: 关闭弹窗
+      if (e.key === 'Escape') {
+        if (isSearchOpen) { setIsSearchOpen(false); e.preventDefault(); return }
+        if (isSettingsOpen) { setIsSettingsOpen(false); e.preventDefault(); return }
+      }
+
+      // Ctrl/Cmd + K: 搜索（不在输入框时）
+      if (isMod && e.key === 'k' && !isInput) {
+        e.preventDefault()
+        setIsSearchOpen(true)
+        return
+      }
+
+      // Ctrl/Cmd + D: 切换暗色模式
+      if (isMod && e.key === 'd') {
+        e.preventDefault()
+        setIsDark((d) => !d)
+        return
+      }
+
+      // Ctrl/Cmd + Shift + E: 导出
+      if (isMod && e.shiftKey && e.key === 'E') {
+        e.preventDefault()
+        handleExport()
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSearchOpen, isSettingsOpen, handleExport])
 
   const handleExport = useCallback(async () => {
     if (!currentWorkId || isExporting) return
