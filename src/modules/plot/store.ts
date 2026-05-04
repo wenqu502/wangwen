@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
-import { useMemo } from 'react'
 import type { PlotNode } from '@/types'
 import { db } from '@/db'
 
@@ -86,8 +85,7 @@ export const usePlotStore = create<PlotState>()(
 // === Selector Hooks（性能优化）===
 
 export function usePlotNodeList(): PlotNode[] {
-  const nodes = usePlotStore(useShallow((s) => s.nodes))
-  return useMemo(() => Object.values(nodes), [nodes])
+  return usePlotStore(useShallow((s) => Object.values(s.nodes)))
 }
 
 export function usePlotNodeCount(): number {

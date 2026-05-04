@@ -37,13 +37,13 @@
 |---|------|------|------|--------|------|--------|----------|
 | 1 | P1-001 | 组件懒加载 | 首页非首屏模块 React.lazy + Suspense | 🔴 高 | ✅ 已 Review 通过 | `frontend-engineering` | `architecture-expert` |
 | 2 | P1-002 | Vite Chunk 拆分 | manualChunks 配置 | 🔴 高 | ✅ 已 Review 通过 | `frontend-engineering` | `architecture-expert` |
-| 3 | P1-003 | useMemo/useCallback | 大型列表记忆化 | 🟡 中 | ✅ 待 Review | `frontend-engineering` | `architecture-expert` |
+| 3 | P1-003 | useMemo/useCallback | 大型列表记忆化 | 🟡 中 | 🔄 P0修复中 | `frontend-engineering` | `architecture-expert` |
 | 4 | P1-004 | IndexedDB 分区 | 读写分离 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
 | 5 | P1-005 | Dexie 事务优化 | 批量写入 + 错误处理 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
-| 6 | P1-006 | XSS 输入净化 | DOMPurify 集成 | 🔴 高 | ✅ 待 Review | `frontend-engineering` | `architecture-expert` |
-| 7 | P1-007 | 错误边界 | ErrorBoundary | 🟡 中 | ✅ 待 Review | `frontend-engineering` | `architecture-expert` |
-| 8 | P1-008 | Dexie 索引优化 | 移除冗余索引 | 🟡 中 | ✅ 待 Review | `frontend-engineering` | `architecture-expert` |
-| 9 | P1-009 | 复合索引 | [workId+targetId] 等 | 🟡 中 | ✅ 待 Review | `frontend-engineering` | `architecture-expert` |
+| 6 | P1-006 | XSS 输入净化 | DOMPurify 集成 | 🔴 高 | 🔄 P0修复中 | `frontend-engineering` | `architecture-expert` |
+| 7 | P1-007 | 错误边界 | ErrorBoundary | 🟡 中 | ✅ Review通过(附建议) | `frontend-engineering` | `architecture-expert` |
+| 8 | P1-008 | Dexie 索引优化 | 移除冗余索引 | 🟡 中 | 🔄 P1修复中 | `frontend-engineering` | `architecture-expert` |
+| 9 | P1-009 | 复合索引 | [workId+targetId] 等 | 🟡 中 | ✅ Review通过 | `frontend-engineering` | `architecture-expert` |
 | 10 | P1-010 | 路由配置 | 404 + 路由守卫 | 🟡 中 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
 | 11 | P1-011 | StrictMode | 确认开启 | 🟢 低 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |
 | 12 | P1-012 | useId | 列表唯一键 | 🟢 低 | ⏳ 待开始 | `frontend-engineering` | `architecture-expert` |

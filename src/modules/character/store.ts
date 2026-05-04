@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
-import { useMemo } from 'react'
 import type { Character } from '@/types'
 import { db } from '@/db'
 
@@ -60,8 +59,7 @@ export const useCharacterStore = create<CharacterState>()(
 
 /** 获取角色列表（数组形式） */
 export function useCharacterList(): Character[] {
-  const characters = useCharacterStore(useShallow((s) => s.characters))
-  return useMemo(() => Object.values(characters), [characters])
+  return useCharacterStore(useShallow((s) => Object.values(s.characters)))
 }
 
 /** 获取角色数量 */

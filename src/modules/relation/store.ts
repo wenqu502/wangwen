@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
-import { useMemo } from 'react'
 import type { RelationEdge } from '@/types'
 import { db } from '@/db'
 
@@ -76,8 +75,7 @@ export const useRelationStore = create<RelationState>()(
 // === Selector Hooks（性能优化）===
 
 export function useRelationEdgeList(): RelationEdge[] {
-  const edges = useRelationStore(useShallow((s) => s.edges))
-  return useMemo(() => Object.values(edges), [edges])
+  return useRelationStore(useShallow((s) => Object.values(s.edges)))
 }
 
 export function useRelationEdgeCount(): number {
