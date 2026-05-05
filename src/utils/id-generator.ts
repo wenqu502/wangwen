@@ -41,3 +41,11 @@ export function generateMessageId(): string {
 export function generateBranchId(): string {
   return generateId('branch')
 }
+
+export function generateEventId(): string {
+  return generateId('evt')
+}
+
+export function generateEventEdgeId(): string {
+  return generateId('eve')
+}

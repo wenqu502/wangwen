@@ -25,12 +25,12 @@ export function ApiKeySettings() {
     <div className="bg-white rounded-xl border border-neutral-200 p-5 space-y-4">
       <div className="flex items-center gap-2">
         <Key className="w-5 h-5 text-indigo-600" />
-        <h3 className="font-semibold text-neutral-900">AI API Key</h3>
+        <h3 className="font-semibold text-neutral-900">DeepSeek API Key</h3>
       </div>
 
       <p className="text-sm text-neutral-500">
         您的 API Key 仅存储在浏览器本地，不会上传到任何服务器。
-        默认使用 Comet One API（Kimi-K2.6），如需切换其他模型可输入自定义 Key。
+        在 <a href="https://platform.deepseek.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">DeepSeek 平台</a> 获取 Key。
       </p>
 
       <div className="space-y-3">

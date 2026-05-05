@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea } from '@/types'
+import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea, StoryEvent, EventEdge } from '@/types'
 import type { Conversation } from '@/ai/types'
 
 /**
@@ -7,7 +7,7 @@ import type { Conversation } from '@/ai/types'
  *
  * 分区策略：
  * - wangwen-db（此文件）: 存储业务数据，使用 Dexie + IndexedDB
- *   包含：作品、角色、剧情节点、关系、体系、灵感
+ *   包含：作品、角色、剧情节点、关系、体系、灵感、事件
  * - wangwen-app-store（src/stores/app-store.ts）: 存储应用状态，使用 zustand persist + localStorage
  *   包含：当前作品ID、当前Tab、面板开关、消息记录
  *
@@ -20,6 +20,8 @@ class WangWenDB extends Dexie {
   relations!: Table<RelationEdge>
   systems!: Table<WorkSystem>
   ideas!: Table<Idea>
+  events!: Table<StoryEvent>
+  eventEdges!: Table<EventEdge>
   conversations!: Table<Conversation>
 
   constructor() {
@@ -105,6 +107,19 @@ class WangWenDB extends Dexie {
       relations: 'id, [workId+sourceId], [workId+targetId], createdAt',
       systems: 'id, workId, createdAt',
       ideas: 'id, [workId+status], createdAt',
+      conversations: 'id, workId, updatedAt',
+    })
+
+    // === v5: 添加事件图谱表 ===
+    this.version(5).stores({
+      works: 'id, name, createdAt',
+      characters: 'id, [workId+name]',
+      plotNodes: 'id, [workId+status], createdAt',
+      relations: 'id, [workId+sourceId], [workId+targetId], createdAt',
+      systems: 'id, workId, createdAt',
+      ideas: 'id, [workId+status], createdAt',
+      events: 'id, workId, [workId+type], createdAt',
+      eventEdges: 'id, workId, [workId+sourceId], [workId+targetId], createdAt',
       conversations: 'id, workId, updatedAt',
     })
   }

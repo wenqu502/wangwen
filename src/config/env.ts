@@ -7,20 +7,20 @@
  * 3. 运行时校验，缺失必填项时给出明确错误
  */
 
-/**  AI API 配置 — 默认使用 Comet One API (Kimi-K2.6) */
+/**  AI API 配置 — 默认使用 DeepSeek API */
 export const AI_CONFIG = {
   /** API 基础地址 */
-  baseURL: import.meta.env.VITE_AI_BASE_URL || 'https://oneapi-comate.baidu-int.com/v1',
-  /** 默认模型 */
-  model: import.meta.env.VITE_AI_MODEL || 'Kimi-K2.6',
+  baseURL: import.meta.env.VITE_AI_BASE_URL || 'https://api.deepseek.com/v1',
+  /** 默认模型：deepseek-chat (V3 通用对话模型) */
+  model: import.meta.env.VITE_AI_MODEL || 'deepseek-chat',
   /** 默认温度 */
   temperature: Number(import.meta.env.VITE_AI_TEMPERATURE || '0.7'),
   /** 默认最大 Token */
   maxTokens: Number(import.meta.env.VITE_AI_MAX_TOKENS || '4096'),
   /** 流式输出延迟（演示模式） */
   mockDelayMs: Number(import.meta.env.VITE_MOCK_DELAY_MS || '10'),
-  /** 默认 API Key — Comet One API 免费额度供用户体验 */
-  apiKey: import.meta.env.VITE_AI_API_KEY || 'sk-nU8nadCSx4pWpDwI2673EaC3FeCd48E3930a623d476bB226',
+  /** 开发环境 API Key（仅用于开发，生产应通过 UI 输入） */
+  apiKey: import.meta.env.VITE_AI_API_KEY || '',
 } as const
 
 /** 应用配置 */

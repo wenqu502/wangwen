@@ -134,4 +134,29 @@ export interface Idea {
   createdAt: string
 }
 
-export type ModuleTab = 'character' | 'plot' | 'relation' | 'system' | 'idea' | 'report'
+export type ModuleTab = 'character' | 'plot' | 'relation' | 'system' | 'idea' | 'event' | 'report'
+
+export interface StoryEvent {
+  id: string
+  workId: string
+  title: string
+  description: string
+  type: 'birth' | 'growth' | 'conflict' | 'climax' | 'resolution' | 'twist' | 'other'
+  chapterId?: string
+  characterIds: string[]
+  timestamp?: string
+  location?: string
+  importance: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface EventEdge {
+  id: string
+  workId: string
+  sourceId: string
+  targetId: string
+  type: 'cause' | 'sequence' | 'parallel' | 'leads_to' | 'triggers'
+  description: string
+  createdAt: string
+}

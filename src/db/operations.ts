@@ -8,7 +8,7 @@
  */
 
 import { db } from './index'
-import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea } from '@/types'
+import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea, StoryEvent, EventEdge } from '@/types'
 import type { Conversation } from '@/ai/types'
 
 // === 错误类型 ===
@@ -69,6 +69,24 @@ export async function readIdeasByWorkId(workId: string): Promise<Idea[]> {
     return await db.ideas.where('workId').equals(workId).toArray()
   } catch (err) {
     throw new DBError('读取灵感数据失败', 'READ_ERROR', 'ideas', err)
+  }
+}
+
+/** 按 workId 读取事件列表 */
+export async function readEventsByWorkId(workId: string): Promise<StoryEvent[]> {
+  try {
+    return await db.events.where('workId').equals(workId).toArray()
+  } catch (err) {
+    throw new DBError('读取事件数据失败', 'READ_ERROR', 'events', err)
+  }
+}
+
+/** 按 workId 读取事件边列表 */
+export async function readEventEdgesByWorkId(workId: string): Promise<EventEdge[]> {
+  try {
+    return await db.eventEdges.where('workId').equals(workId).toArray()
+  } catch (err) {
+    throw new DBError('读取事件边数据失败', 'READ_ERROR', 'eventEdges', err)
   }
 }
 
@@ -308,6 +326,93 @@ export async function writeDeleteIdea(id: string): Promise<WriteResult<void>> {
   }
 }
 
+/** 添加事件 */
+export async function writeAddEvent(event: StoryEvent): Promise<WriteResult<StoryEvent>> {
+  try {
+    await db.transaction('rw', db.events, async () => {
+      await db.events.add(event)
+    })
+    return { success: true, data: event }
+  } catch (err) {
+    const dbErr = new DBError('添加事件失败', 'WRITE_ERROR', 'events', err)
+    console.error('[DB] writeAddEvent:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 更新事件 */
+export async function writeUpdateEvent(event: StoryEvent): Promise<WriteResult<StoryEvent>> {
+  try {
+    await db.transaction('rw', db.events, async () => {
+      await db.events.put(event)
+    })
+    return { success: true, data: event }
+  } catch (err) {
+    const dbErr = new DBError('更新事件失败', 'WRITE_ERROR', 'events', err)
+    console.error('[DB] writeUpdateEvent:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 删除事件 */
+export async function writeDeleteEvent(id: string): Promise<WriteResult<void>> {
+  try {
+    await db.transaction('rw', [db.events, db.eventEdges], async () => {
+      await db.events.delete(id)
+      // 级联删除相关边
+      const edges = await db.eventEdges.where({ sourceId: id }).or('targetId').equals(id).toArray()
+      await db.eventEdges.bulkDelete(edges.map((e) => e.id))
+    })
+    return { success: true }
+  } catch (err) {
+    const dbErr = new DBError('删除事件失败', 'WRITE_ERROR', 'events', err)
+    console.error('[DB] writeDeleteEvent:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 添加事件边 */
+export async function writeAddEventEdge(edge: EventEdge): Promise<WriteResult<EventEdge>> {
+  try {
+    await db.transaction('rw', db.eventEdges, async () => {
+      await db.eventEdges.add(edge)
+    })
+    return { success: true, data: edge }
+  } catch (err) {
+    const dbErr = new DBError('添加事件边失败', 'WRITE_ERROR', 'eventEdges', err)
+    console.error('[DB] writeAddEventEdge:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 更新事件边 */
+export async function writeUpdateEventEdge(edge: EventEdge): Promise<WriteResult<EventEdge>> {
+  try {
+    await db.transaction('rw', db.eventEdges, async () => {
+      await db.eventEdges.put(edge)
+    })
+    return { success: true, data: edge }
+  } catch (err) {
+    const dbErr = new DBError('更新事件边失败', 'WRITE_ERROR', 'eventEdges', err)
+    console.error('[DB] writeUpdateEventEdge:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 删除事件边 */
+export async function writeDeleteEventEdge(id: string): Promise<WriteResult<void>> {
+  try {
+    await db.transaction('rw', db.eventEdges, async () => {
+      await db.eventEdges.delete(id)
+    })
+    return { success: true }
+  } catch (err) {
+    const dbErr = new DBError('删除事件边失败', 'WRITE_ERROR', 'eventEdges', err)
+    console.error('[DB] writeDeleteEventEdge:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
 // === 批量操作 ===
 
 /** 批量添加角色 */
@@ -341,9 +446,9 @@ export async function writeBulkPutCharacters(chars: Character[]): Promise<WriteR
 /** 全量数据加载（初始化用） */
 export async function loadAllDataByWorkId(workId: string) {
   try {
-    const [characters, plotNodes, relations, systems, ideas] = await db.transaction(
+    const [characters, plotNodes, relations, systems, ideas, events, eventEdges] = await db.transaction(
       'r',
-      [db.characters, db.plotNodes, db.relations, db.systems, db.ideas],
+      [db.characters, db.plotNodes, db.relations, db.systems, db.ideas, db.events, db.eventEdges],
       async () => {
         return await Promise.all([
           db.characters.where('workId').equals(workId).toArray(),
@@ -351,13 +456,63 @@ export async function loadAllDataByWorkId(workId: string) {
           db.relations.where('workId').equals(workId).toArray(),
           db.systems.where('workId').equals(workId).toArray(),
           db.ideas.where('workId').equals(workId).toArray(),
+          db.events.where('workId').equals(workId).toArray(),
+          db.eventEdges.where('workId').equals(workId).toArray(),
         ])
       },
     )
-    return { success: true as const, characters, plotNodes, relations, systems, ideas }
+    return { success: true as const, characters, plotNodes, relations, systems, ideas, events, eventEdges }
   } catch (err) {
     const dbErr = new DBError('加载数据失败', 'READ_ERROR', undefined, err)
     console.error('[DB] loadAllDataByWorkId:', dbErr)
     return { success: false as const, error: dbErr }
+  }
+}
+
+// === 对话历史读写 (P1-009: AI对话优化模块) ===
+
+/** 读取作品下的所有对话 */
+export async function readConversationsByWorkId(workId: string): Promise<Conversation[]> {
+  try {
+    return await db.conversations.where('workId').equals(workId).sortBy('updatedAt')
+  } catch (err) {
+    throw new DBError('读取对话历史失败', 'READ_ERROR', 'conversations', err)
+  }
+}
+
+/** 按 ID 读取单个对话 */
+export async function readConversationById(id: string): Promise<Conversation | undefined> {
+  try {
+    return await db.conversations.get(id)
+  } catch (err) {
+    throw new DBError('读取对话失败', 'READ_ERROR', 'conversations', err)
+  }
+}
+
+/** 保存/更新对话 */
+export async function writeSaveConversation(conv: Conversation): Promise<WriteResult<Conversation>> {
+  try {
+    await db.transaction('rw', db.conversations, async () => {
+      await db.conversations.put(conv)
+    })
+    return { success: true, data: conv }
+  } catch (err) {
+    const dbErr = new DBError('保存对话失败', 'WRITE_ERROR', 'conversations', err)
+    console.error('[DB] writeSaveConversation:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 删除对话 */
+export async function writeDeleteConversation(id: string): Promise<WriteResult<void>> {
+  try {
+    await db.transaction('rw', db.conversations, async () => {
+      await db.conversations.delete(id)
+    })
+    return { success: true }
+  } catch (err) {
+    const dbErr = new DBError('删除对话失败', 'WRITE_ERROR', 'conversations', err)
+    console.error('[DB] writeDeleteConversation:', dbErr)
+    return { success: false, error: dbErr }
   }
 }
