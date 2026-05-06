@@ -47,14 +47,26 @@ export async function* chatStream(options: AIChatOptions): AsyncGenerator<AIStre
   }
 
   const client = createClient()
+  const isReasoningModel = AI_CONFIG.model.includes('v4') || AI_CONFIG.model.includes('reasoner')
   const stream = await client.chat.completions.create({
     model: AI_CONFIG.model,
     messages: options.messages as any,
     tools: options.tools as any,
     stream: true,
-    temperature: options.temperature ?? AI_CONFIG.temperature,
     max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
-  })
+    ...(isReasoningModel && AI_CONFIG.reasoning
+      ? {
+          // V4 Pro / Reasoner 模型：开启思考模式，通过 extra_body 传递 reasoning_effort
+          // temperature 对 reasoning 模型不生效，此处省略
+          extra_body: {
+            reasoning_effort: AI_CONFIG.reasoningEffort,
+          },
+        }
+      : {
+          // 非 reasoning 模型：正常传递 temperature
+          temperature: options.temperature ?? AI_CONFIG.temperature,
+        }),
+  } as any)
 
   for await (const chunk of stream) {
     yield chunk as unknown as AIStreamChunk
@@ -67,13 +79,22 @@ export async function chatOnce(options: AIChatOptions): Promise<string> {
   }
 
   const client = createClient()
+  const isReasoningModel = AI_CONFIG.model.includes('v4') || AI_CONFIG.model.includes('reasoner')
   const response = await client.chat.completions.create({
     model: AI_CONFIG.model,
     messages: options.messages as any,
     tools: options.tools as any,
-    temperature: options.temperature ?? AI_CONFIG.temperature,
     max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
-  })
+    ...(isReasoningModel && AI_CONFIG.reasoning
+      ? {
+          extra_body: {
+            reasoning_effort: AI_CONFIG.reasoningEffort,
+          },
+        }
+      : {
+          temperature: options.temperature ?? AI_CONFIG.temperature,
+        }),
+  } as any)
 
   return response.choices[0]?.message?.content ?? ''
 }

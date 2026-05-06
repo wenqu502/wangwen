@@ -100,7 +100,7 @@ docs/
 
 ## 🔗 相关资源
 
-- **项目仓库**: `~/Desktop/wyq_openclaw/openclaw/【第二大脑】/second_brain/【98】自有项目库/【96】小说网文作者Web`
+- **项目仓库**: `<项目根目录>/【第二大脑】/second_brain/【98】自有项目库/【96】小说网文作者Web`
 - **构建产物**: `dist/` 目录（`npm run build` 生成）
 - **开发入口**: `npm run dev`（Vite dev server）
 - **环境配置**: 复制 `.env.local.example` → `.env.local` 后填入 API Key

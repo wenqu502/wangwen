@@ -7,13 +7,17 @@
  * 3. 运行时校验，缺失必填项时给出明确错误
  */
 
-/**  AI API 配置 — 默认使用 DeepSeek API */
+/**  AI API 配置 — 默认使用 DeepSeek V4 Pro API */
 export const AI_CONFIG = {
   /** API 基础地址 */
   baseURL: import.meta.env.VITE_AI_BASE_URL || 'https://api.deepseek.com/v1',
-  /** 默认模型：deepseek-chat (V3 通用对话模型) */
-  model: import.meta.env.VITE_AI_MODEL || 'deepseek-chat',
-  /** 默认温度 */
+  /** 默认模型：deepseek-v4-pro (V4 Pro 思考模型，deepseek-chat 已弃用) */
+  model: import.meta.env.VITE_AI_MODEL || 'deepseek-v4-pro',
+  /** 是否开启思考模式 (reasoning) — V4 Pro 默认开启 */
+  reasoning: import.meta.env.VITE_AI_REASONING !== 'false',
+  /** 思考深度: low | medium | high */
+  reasoningEffort: (import.meta.env.VITE_AI_REASONING_EFFORT as 'low' | 'medium' | 'high') || 'medium',
+  /** 默认温度 — V4 Pro 不支持 temperature，此值会被忽略 */
   temperature: Number(import.meta.env.VITE_AI_TEMPERATURE || '0.7'),
   /** 默认最大 Token */
   maxTokens: Number(import.meta.env.VITE_AI_MAX_TOKENS || '4096'),
