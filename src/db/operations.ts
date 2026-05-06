@@ -109,7 +109,7 @@ export async function readAllWorks(): Promise<Work[]> {
 }
 
 /** 添加作品（P1-002: 写入前加密敏感字段） */
-export async function writeAddWork(work: Work): Promise<WriteResult<Work>> {
+export async function writeAddWork(work: Work): Promise Promise<WriteResultResult<Work>> {
   try {
     const encrypted = await encryptObjectFields(work)
     await db.transaction('rw', db.works, async () => {
@@ -124,44 +124,7 @@ export async function writeAddWork(work: Work): Promise<WriteResult<Work>> {
 }
 
 /** 删除作品（级联删除关联数据） */
-export async function writeDeleteWork(id: string): Promise<WriteResult<void>> {
-  try {
-    await db.transaction('rw', [db.works, db.characters, db.plotNodes, db.relations, db.systems, db.ideas, db.events, db.eventEdges, db.conversations], async () => {
-      await db.works.delete(id)
-      await db.characters.where('workId').equals(id).delete()
-      await db.plotNodes.where('workId').equals(id).delete()
-      await db.relations.where('workId').equals(id).delete()
-      await db.systems.where('workId').equals(id).delete()
-      await db.ideas.where('workId').equals(id).delete()
-      await db.events.where('workId').equals(id).delete()
-      await db.eventEdges.where('workId').equals(id).delete()
-      await db.conversations.where('workId').equals(id).delete()
-    })
-    return { success: true }
-  } catch (err) {
-    const dbErr = new DBError('删除作品失败', 'WRITE_ERROR', 'works', err)
-    console.error('[DB] writeDeleteWork:', dbErr)
-    return { success: false, error: dbErr }
-  }
-}
-
-/** 添加作品（P1-002: 写入前加密敏感字段） */
-export async function writeAddWork(work: Work): Promise<WriteResult<Work>> {
-  try {
-    const encrypted = await encryptObjectFields(work)
-    await db.transaction('rw', db.works, async () => {
-      await db.works.add(encrypted)
-    })
-    return { success: true, data: work }
-  } catch (err) {
-    const dbErr = new DBError('添加作品失败', 'WRITE_ERROR', 'works', err)
-    console.error('[DB] writeAddWork:', dbErr)
-    return { success: false, error: dbErr }
-  }
-}
-
-/** 删除作品（级联删除关联数据） */
-export async function writeDeleteWork(id: string): Promise<WriteResult<void>> {
+export async function writeDeleteWork(id: string): Promise Promise<WriteResult<void>> {
   try {
     await db.transaction('rw', [db.works, db.characters, db.plotNodes, db.relations, db.systems, db.ideas, db.events, db.eventEdges, db.conversations], async () => {
       await db.works.delete(id)
