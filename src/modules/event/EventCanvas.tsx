@@ -1,15 +1,14 @@
 import { useEventStore } from './store'
-import { usePlotStore } from '@/modules/plot/store'
-import { useCharacterStore } from '@/modules/character/store'
+import { useAppStore } from '@/stores/app-store'
 import { useState } from 'react'
 import { Plus, Trash2, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { generateEventId, generateEventEdgeId } from '@/utils/id-generator'
+import { generateEventId } from '@/utils/id-generator'
+import type { StoryEvent } from '@/types'
 
 export function EventCanvas() {
-  const { events, eventEdges, addEvent, deleteEvent, addEventEdge, deleteEventEdge } = useEventStore()
-  const nodes = usePlotStore((s) => s.nodes)
-  const characters = useCharacterStore((s) => s.characters)
+  const { events, eventEdges, addEvent, deleteEvent, deleteEventEdge } = useEventStore()
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
 
   const [newEventTitle, setNewEventTitle] = useState('')
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
@@ -19,16 +18,19 @@ export function EventCanvas() {
 
   const handleAddEvent = () => {
     if (!newEventTitle.trim()) return
-    addEvent({
+    const event: StoryEvent = {
       id: generateEventId(),
-      workId: '',
+      workId: currentWorkId || 'default',
       title: newEventTitle.trim(),
-      summary: '',
-      characters: [],
+      description: '',
+      type: 'other',
+      characterIds: [],
       location: '',
-      tags: [],
+      importance: 3,
       createdAt: new Date().toISOString(),
-    })
+      updatedAt: new Date().toISOString(),
+    }
+    addEvent(event)
     setNewEventTitle('')
   }
 
@@ -45,11 +47,11 @@ export function EventCanvas() {
           onChange={(e) => setNewEventTitle(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddEvent()}
           placeholder="输入事件名称..."
-          className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-brand"
         />
         <button
           onClick={handleAddEvent}
-          className="px-3 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+          className="px-3 py-2 bg-brand text-white text-sm rounded-md hover:bg-brand-active transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -71,7 +73,7 @@ export function EventCanvas() {
                 className={cn(
                   'p-3 border rounded-md cursor-pointer transition-colors',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20'
+                    ? 'border-brand bg-brand-light dark:bg-brand-active/20'
                     : 'border-border hover:bg-accent'
                 )}
               >

@@ -3,7 +3,7 @@
  * 提供最小可行实现框架，支持图片生成占位、伏笔检测、灵感分类
  */
 
-import type { PlotNode, Character, Idea } from '@/types'
+import type { PlotNode, Character, Idea, WorkSystem } from '@/types'
 
 // === P2-001: AI 图片生成占位符 ===
 
@@ -129,4 +129,136 @@ export function suggestIdeaLinks(
   }
 
   return suggestions.slice(0, 3)
+}
+
+// === Batch5: 规则冲突检测框架 ===
+
+export interface RuleConflict {
+  type: 'duplicate' | 'contradiction' | 'orphan_hard_rule'
+  systemId: string
+  systemName: string
+  ruleId: string
+  message: string
+}
+
+/** 检测世界观体系中的规则冲突 */
+export function detectRuleConflicts(systems: WorkSystem[]): RuleConflict[] {
+  const conflicts: RuleConflict[] = []
+
+  for (const system of systems) {
+    const seen = new Set<string>()
+    for (const rule of system.rules) {
+      const normalized = rule.description.replace(/\s+/g, '').toLowerCase()
+
+      // 重复规则检测
+      if (seen.has(normalized)) {
+        conflicts.push({
+          type: 'duplicate',
+          systemId: system.id,
+          systemName: system.name,
+          ruleId: rule.id,
+          message: `规则「${rule.description.slice(0, 30)}...」与体系内其他规则重复`,
+        })
+      }
+      seen.add(normalized)
+
+      // 孤儿硬规则：无例外条款的 hard 规则
+      if (rule.severity === 'hard' && rule.exceptions.length === 0) {
+        conflicts.push({
+          type: 'orphan_hard_rule',
+          systemId: system.id,
+          systemName: system.name,
+          ruleId: rule.id,
+          message: `硬规则「${rule.description.slice(0, 30)}...」未定义任何例外条款，可能导致剧情无法推进`,
+        })
+      }
+    }
+  }
+
+  // 跨体系矛盾检测：简单关键词反义匹配
+  const contradictionPairs = [
+    { pos: ['可以', '允许', '能'], neg: ['禁止', '不能', '不可', '无法'] },
+    { pos: ['必须', '一定', '只能'], neg: ['可选', '自由', '任意'] },
+  ]
+  for (let i = 0; i < systems.length; i++) {
+    for (let j = i + 1; j < systems.length; j++) {
+      const s1 = systems[i]
+      const s2 = systems[j]
+      for (const r1 of s1.rules) {
+        for (const r2 of s2.rules) {
+          for (const pair of contradictionPairs) {
+            const r1HasPos = pair.pos.some((kw) => r1.description.includes(kw))
+            const r2HasNeg = pair.neg.some((kw) => r2.description.includes(kw))
+            if (r1HasPos && r2HasNeg && r1.description.length > 5 && r2.description.length > 5) {
+              conflicts.push({
+                type: 'contradiction',
+                systemId: s1.id,
+                systemName: s1.name,
+                ruleId: r1.id,
+                message: `「${s1.name}」的规则与「${s2.name}」的规则可能存在矛盾`,
+              })
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return conflicts
+}
+
+// === Batch5: 人设一致性校验框架 ===
+
+export interface CharacterInconsistency {
+  characterId: string
+  characterName: string
+  type: 'status_vs_goals' | 'ability_vs_background' | 'empty_critical_field'
+  message: string
+}
+
+/** 基础人设一致性校验（非 AI，基于规则） */
+export function detectCharacterInconsistencies(characters: Character[]): CharacterInconsistency[] {
+  const issues: CharacterInconsistency[] = []
+
+  for (const char of characters) {
+    // 死亡/失踪角色仍有未来目标
+    if ((char.status === 'dead' || char.status === 'missing') && char.goals) {
+      const futureKeywords = ['要', '想', '打算', '计划', '目标', '成为', '复仇', '拯救']
+      if (futureKeywords.some((kw) => char.goals!.includes(kw))) {
+        issues.push({
+          characterId: char.id,
+          characterName: char.name,
+          type: 'status_vs_goals',
+          message: `角色状态为「${char.status === 'dead' ? '死亡' : '失踪'}」，但目标描述包含未来意向：「${char.goals!.slice(0, 20)}...」`,
+        })
+      }
+    }
+
+    // 背景与能力冲突：背景说不会魔法，能力却有魔法
+    const magicKeywords = ['魔法', '法术', '灵力', '异能', '超能力']
+    const noMagicKeywords = ['不会', '无法', '没有', '普通人', '无能力']
+    const hasMagicAbility = char.abilities.some((a) => magicKeywords.some((kw) => a.includes(kw)))
+    const backgroundDeniesMagic = noMagicKeywords.some((kw) => char.background.includes(kw)) &&
+      magicKeywords.some((kw) => char.background.includes(kw.replace('魔法', '').replace('法术', '')))
+    if (hasMagicAbility && backgroundDeniesMagic) {
+      issues.push({
+        characterId: char.id,
+        characterName: char.name,
+        type: 'ability_vs_background',
+        message: '背景描述暗示无特殊能力，但能力列表包含魔法/异能',
+      })
+    }
+
+    // 关键字段缺失
+    if (!char.appearance || !char.background || !char.personality.surface) {
+      issues.push({
+        characterId: char.id,
+        characterName: char.name,
+        type: 'empty_critical_field',
+        message: '角色关键字段（外貌/背景/性格）未填写完整',
+      })
+    }
+  }
+
+  return issues
 }

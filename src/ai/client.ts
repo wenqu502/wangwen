@@ -22,7 +22,8 @@ function getApiKey(): string {
 const BASE_URL = AI_CONFIG.baseURL
 const REQUEST_TIMEOUT_MS = 30000
 const MAX_RETRIES = 2
-const MAX_CONTEXT_MESSAGES = 20
+/** P1-004: 上下文 Token 预算（为响应留 ~25% 余量） */
+const MAX_CONTEXT_TOKENS = 6000
 
 function createClient() {
   const apiKey = getApiKey()
@@ -35,13 +36,40 @@ function createClient() {
   })
 }
 
-/** 截断消息列表，保留系统提示词和最近 N 条消息 (P1-003) */
-function truncateMessages(messages: AIChatOptions['messages']): AIChatOptions['messages'] {
-  if (messages.length <= MAX_CONTEXT_MESSAGES + 1) return messages
+/** P1-004: 简易 Token 估算（中文 ~1.5 token/字，英文 ~4 chars/token） */
+function estimateTokens(text: string): number {
+  const chineseChars = (text.match(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/g) || []).length
+  const otherChars = text.length - chineseChars
+  return Math.ceil(chineseChars * 1.5 + otherChars * 0.25)
+}
+
+function estimateMessageTokens(msg: AIChatMessage): number {
+  // 基础开销 + 内容长度
+  const base = msg.role === 'system' ? 50 : 10
+  return base + estimateTokens(msg.content || '')
+}
+
+/** P1-004: Token 感知的上下文截断（保留系统提示 + 最近对话，总 Token 不超预算） */
+export function truncateMessages(messages: AIChatOptions['messages']): AIChatOptions['messages'] {
   const systemMsgs = messages.filter((m) => m.role === 'system')
   const nonSystem = messages.filter((m) => m.role !== 'system')
-  const recent = nonSystem.slice(-MAX_CONTEXT_MESSAGES)
-  return [...systemMsgs, ...recent]
+
+  let totalTokens = systemMsgs.reduce((sum, m) => sum + estimateMessageTokens(m), 0)
+  const kept: AIChatMessage[] = [...systemMsgs]
+
+  // 从最近的消息往前遍历，保留直到 Token 预算耗尽
+  for (let i = nonSystem.length - 1; i >= 0; i--) {
+    const msg = nonSystem[i]
+    const msgTokens = estimateMessageTokens(msg)
+    if (totalTokens + msgTokens > MAX_CONTEXT_TOKENS && kept.length > systemMsgs.length) {
+      // 已超预算且至少保留了一条非系统消息，停止
+      break
+    }
+    kept.unshift(msg)
+    totalTokens += msgTokens
+  }
+
+  return kept
 }
 
 export function hasApiKey(): boolean {
@@ -74,6 +102,7 @@ export async function* chatStream(options: AIChatOptions): AsyncGenerator<AIStre
         tools: options.tools as any,
         stream: true,
         max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
+        signal: options.signal,
         ...(isReasoningModel && AI_CONFIG.reasoning
           ? {
               extra_body: {
@@ -118,6 +147,7 @@ export async function chatOnce(options: AIChatOptions): Promise<string> {
         messages: messages as any,
         tools: options.tools as any,
         max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
+        signal: options.signal,
         ...(isReasoningModel && AI_CONFIG.reasoning
           ? {
               extra_body: {
@@ -196,7 +226,10 @@ export function isMockMode(): boolean {
   return !hasApiKey()
 }
 
-export async function* mockChatStream(options: AIChatOptions): AsyncGenerator<AIStreamChunk> {
+export async function* mockChatStream(
+  options: AIChatOptions,
+  signal?: AbortSignal,
+): AsyncGenerator<AIStreamChunk> {
   const lastUserMsg = options.messages.filter((m) => m.role === 'user').pop()
   const text = lastUserMsg?.content || ''
 
@@ -207,13 +240,14 @@ export async function* mockChatStream(options: AIChatOptions): AsyncGenerator<AI
   const chars = response.text.split('')
   let accumulated = ''
   for (const ch of chars) {
+    if (signal?.aborted) break
     accumulated += ch
     await delay(MOCK_DELAY_MS)
     yield createMockChunk(accumulated)
   }
 
   // 如果有 tool calls，在文本流完后发送
-  if (response.toolCall) {
+  if (response.toolCall && !signal?.aborted) {
     await delay(200)
     yield createMockToolChunk(response.toolCall)
   }

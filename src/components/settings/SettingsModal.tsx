@@ -37,7 +37,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors',
                   activeSection === section.id
-                    ? 'bg-indigo-50 text-indigo-600 font-medium'
+                    ? 'bg-brand-light text-brand font-medium'
                     : 'text-neutral-600 hover:bg-neutral-100'
                 )}
               >
@@ -69,7 +69,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {activeSection === 'about' && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-lg font-bold">
+                  <div className="w-10 h-10 rounded-lg bg-brand text-white flex items-center justify-center text-lg font-bold">
                     织
                   </div>
                   <div>

@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useId, memo } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { sanitizeHtml } from '@/utils/sanitize'
-import { Send, Bot, User, Loader2, Sparkles, Users, GitBranch, Network, Layers } from 'lucide-react'
+import { Send, Bot, User, Loader2, Sparkles, Users, GitBranch, Network, Layers, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { handleStreamingResponse } from '@/ai/streaming'
-import { buildSystemPrompt } from '@/ai/client'
+import { buildSystemPrompt, truncateMessages } from '@/ai/client'
 import { tools } from '@/ai/function-calling'
 import { executeTool } from '@/ai/tool-executor'
 import { loadMessages, saveMessages } from '@/db/operations'
@@ -23,8 +23,8 @@ const MessageBubble = memo(function MessageBubble({ msg }: { msg: ChatMessage })
         className={cn(
           'w-7 h-7 rounded-full flex items-center justify-center shrink-0',
           msg.role === 'user'
-            ? 'bg-indigo-600 text-white'
-            : 'bg-indigo-100 text-indigo-600'
+            ? 'bg-brand text-white'
+            : 'bg-brand-light text-brand'
         )}
       >
         {msg.role === 'user' ? (
@@ -37,7 +37,7 @@ const MessageBubble = memo(function MessageBubble({ msg }: { msg: ChatMessage })
         className={cn(
           'max-w-[85%] px-3 py-2 rounded-2xl text-sm leading-relaxed',
           msg.role === 'user'
-            ? 'bg-indigo-600 text-white rounded-br-md'
+            ? 'bg-brand text-white rounded-br-md'
             : 'bg-neutral-100 text-neutral-800 rounded-bl-md'
         )}
       >
@@ -62,8 +62,9 @@ export function ChatPanel() {
   const currentWorkId = useAppStore((s) => s.currentWorkId)
 
   const [input, setInput] = useState('')
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRefRef<HTMLDivElement>(null)
   const panelId = useId()
+  const abortRef = useRefRef<AbortController | null>(null)
 
   // P0-002: 从 IndexedDB 加载对话历史
   useEffect(() => {
@@ -112,25 +113,30 @@ export function ChatPanel() {
       timestamp: Date.now(),
     })
 
+    const abortController = new AbortController()
+    abortRef.current = abortController
+
     try {
       const systemPrompt = await buildSystemPrompt(currentTab, currentWorkId)
 
+      // P1-004: 使用 Token 感知的上下文截断
+      const allMessages = [
+        systemPrompt,
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user' as const, content: userMsg.content },
+      ]
+      const truncatedMessages = truncateMessages(allMessages)
+
       const result = await handleStreamingResponse(
         {
-          messages: [
-            systemPrompt,
-            ...messages.slice(-10).map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-            { role: 'user', content: userMsg.content },
-          ],
+          messages: truncatedMessages,
           tools,
           temperature: 0.7,
         },
         (text) => {
           updateMessage(assistantMsgId, text)
-        }
+        },
+        abortController.signal
       )
 
       // 流式完成后，如果有 toolCalls 则执行
@@ -151,11 +157,16 @@ export function ChatPanel() {
         }
       }
     } catch (err) {
-      updateMessage(
-        assistantMsgId,
-        `抱歉，AI 调用出错：${err instanceof Error ? err.message : '未知错误'}`
-      )
+      if (abortController.signal.aborted) {
+        updateMessage(assistantMsgId, '已停止生成')
+      } else {
+        updateMessage(
+          assistantMsgId,
+          `抱歉，AI 调用出错：${err instanceof Error ? err.message : '未知错误'}`
+        )
+      }
     } finally {
+      abortRef.current = null
       setIsLoading(false)
     }
   }, [input, isLoading, currentTab, currentWorkId, messages, addMessage, updateMessage, setIsLoading])
@@ -171,7 +182,7 @@ export function ChatPanel() {
     <div className="flex flex-col h-full">
       {/* 面板标题 */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 shrink-0">
-        <Sparkles className="w-5 h-5 text-indigo-600" />
+        <Sparkles className="w-5 h-5 text-brand" />
         <span className="font-semibold text-neutral-900">AI 创作助手</span>
       </div>
 
@@ -213,7 +224,7 @@ export function ChatPanel() {
 
         {isLoading && (
           <div className="flex gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-full bg-brand-light text-brand flex items-center justify-center shrink-0">
               <Bot className="w-4 h-4" />
             </div>
             <div className="bg-neutral-100 px-3 py-2 rounded-2xl rounded-bl-md">
@@ -231,7 +242,7 @@ export function ChatPanel() {
             <button
               key={cmd.id}
               onClick={() => setInput(cmd.text)}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] text-neutral-600 bg-neutral-50 hover:bg-indigo-50 hover:text-indigo-600 border border-neutral-200 rounded-md transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-[11px] text-neutral-600 bg-neutral-50 hover:bg-brand-light hover:text-brand border border-neutral-200 rounded-md transition-colors"
             >
               <Icon className="w-3 h-3" />
               <span>{cmd.label}</span>
@@ -242,7 +253,7 @@ export function ChatPanel() {
 
       {/* 输入框 */}
       <div className="p-3 border-t border-neutral-200 shrink-0">
-        <div className="flex items-end gap-2 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 focus-within:border-indigo-300 focus-within:ring-1 focus-within:ring-indigo-300 transition-all">
+        <div className="flex items-end gap-2 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 focus-within:border-brand-hover focus-within:ring-1 focus-within:ring-brand-hover transition-all">
           <textarea
             id={`${panelId}-input`}
             value={input}
@@ -254,17 +265,19 @@ export function ChatPanel() {
             className="flex-1 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 resize-none outline-none min-h-[20px] max-h-[120px]"
           />
           <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            aria-label="发送"
+            onClick={isLoading ? () => abortRef.current?.abort() : handleSend}
+            disabled={!isLoading && !input.trim()}
+            aria-label={isLoading ? '停止生成' : '发送'}
             className={cn(
               'p-1.5 rounded-lg transition-colors shrink-0',
-              input.trim() && !isLoading
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+              isLoading
+                ? 'bg-error text-white hover:bg-error/80'
+                : input.trim()
+                  ? 'bg-brand text-white hover:bg-brand-active'
+                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
             )}
           >
-            <Send className="w-4 h-4" />
+            {isLoading ? <Square className="w-4 h-4 fill-current" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
         <p className="text-[10px] text-neutral-400 mt-1.5 text-center">

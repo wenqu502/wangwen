@@ -54,7 +54,7 @@ export function SystemCanvas() {
         <h2 className="text-lg font-semibold text-foreground">体系管理</h2>
         <button
           onClick={handleCreateSystem}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-brand text-white rounded-md hover:bg-brand-active transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>添加体系</span>
@@ -113,7 +113,7 @@ export function SystemCanvas() {
                               key={level.rank}
                               className="flex items-center gap-3 py-2 px-3 bg-muted rounded-md"
                             >
-                              <span className="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-600 text-xs font-bold rounded-full shrink-0">
+                              <span className="w-6 h-6 flex items-center justify-center bg-brand-light text-brand text-xs font-bold rounded-full shrink-0">
                                 T{level.rank}
                               </span>
                               <div className="flex-1 min-w-0">

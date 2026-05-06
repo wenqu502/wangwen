@@ -24,13 +24,13 @@ export function ApiKeySettings() {
   return (
     <div className="bg-white rounded-xl border border-neutral-200 p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <Key className="w-5 h-5 text-indigo-600" />
+        <Key className="w-5 h-5 text-brand" />
         <h3 className="font-semibold text-neutral-900">DeepSeek API Key</h3>
       </div>
 
       <p className="text-sm text-neutral-500">
         您的 API Key 仅存储在浏览器本地，不会上传到任何服务器。
-        在 <a href="https://platform.deepseek.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">DeepSeek 平台</a> 获取 Key。
+        在 <a href="https://platform.deepseek.com/" target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">DeepSeek 平台</a> 获取 Key。
       </p>
 
       <div className="space-y-3">
@@ -40,7 +40,7 @@ export function ApiKeySettings() {
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder={hasApiKey() ? '••••••••••••••••' : '输入您的 API Key'}
-            className="w-full pr-20 pl-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full pr-20 pl-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
           />
           <button
             type="button"
@@ -55,7 +55,7 @@ export function ApiKeySettings() {
           <button
             onClick={handleSave}
             disabled={!key.trim()}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-brand text-white rounded-lg hover:bg-brand-active disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Check className="w-4 h-4" />
             {saved ? '已保存' : '保存'}

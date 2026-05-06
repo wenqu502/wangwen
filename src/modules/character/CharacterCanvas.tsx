@@ -134,7 +134,7 @@ export function CharacterCanvas() {
           <div className="flex gap-1">
             <button
               onClick={handleCreateMock}
-              className="p-1.5 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-brand hover:bg-brand-light rounded-md transition-colors"
               title="手动创建"
               aria-label="手动创建"
             >
@@ -149,7 +149,7 @@ export function CharacterCanvas() {
                   timestamp: Date.now(),
                 })
               }}
-              className="p-1.5 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-brand hover:bg-brand-light rounded-md transition-colors"
               title="AI 创建"
             >
               <Sparkles className="w-4 h-4" />
@@ -172,12 +172,12 @@ export function CharacterCanvas() {
                 className={cn(
                   'w-full text-left p-3 rounded-lg border transition-all',
                   selectedId === char.id
-                    ? 'border-indigo-300 bg-indigo-50 shadow-sm'
+                    ? 'border-brand-hover bg-brand-light shadow-sm'
                     : 'border-border bg-card hover:border-border'
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-medium shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center text-sm font-medium shrink-0">
                     {char.name.charAt(0)}
                   </div>
                   <div className="min-w-0">
@@ -202,7 +202,7 @@ export function CharacterCanvas() {
             {/* 头部信息 */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="relative w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold overflow-hidden">
+                <div className="relative w-14 h-14 rounded-full bg-brand-light text-brand flex items-center justify-center text-xl font-bold overflow-hidden">
                   {selected.images?.[0] ? (
                     <img src={selected.images[0]} alt={selected.name} className="w-full h-full object-cover" />
                   ) : (
@@ -231,8 +231,35 @@ export function CharacterCanvas() {
                 </div>
                 {isEditing && (
                   <button
-                    onClick={() => alert('AI 形象生成功能即将上线，敬请期待！')}
-                    className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1 mt-1"
+                    onClick={() => {
+                      // Batch5: AI 形象生成占位 — 使用 Canvas 生成渐变头像
+                      const canvas = document.createElement('canvas')
+                      canvas.width = 200
+                      canvas.height = 200
+                      const ctx = canvas.getContext('2d')
+                      if (ctx) {
+                        const gradient = ctx.createLinearGradient(0, 0, 200, 200)
+                        gradient.addColorStop(0, '#4756ff')
+                        gradient.addColorStop(1, '#6f7bff')
+                        ctx.fillStyle = gradient
+                        ctx.fillRect(0, 0, 200, 200)
+                        ctx.fillStyle = 'rgba(255,255,255,0.15)'
+                        ctx.beginPath()
+                        ctx.arc(100, 80, 50, 0, Math.PI * 2)
+                        ctx.fill()
+                        ctx.beginPath()
+                        ctx.ellipse(100, 190, 70, 60, 0, 0, Math.PI * 2)
+                        ctx.fill()
+                        ctx.fillStyle = '#ffffff'
+                        ctx.font = 'bold 80px sans-serif'
+                        ctx.textAlign = 'center'
+                        ctx.textBaseline = 'middle'
+                        ctx.fillText((editForm.name || selected.name).charAt(0), 100, 105)
+                        const dataUrl = canvas.toDataURL('image/png')
+                        updateField('images', [dataUrl])
+                      }
+                    }}
+                    className="text-xs text-brand hover:text-brand-active flex items-center gap-1 mt-1"
                   >
                     <Wand2 className="w-3 h-3" />
                     AI 生成形象
@@ -270,7 +297,7 @@ export function CharacterCanvas() {
                   <button
                     onClick={startEdit}
                     aria-label="编辑角色"
-                    className="p-2 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                    className="p-2 text-muted-foreground hover:text-brand hover:bg-brand-light rounded-md transition-colors"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -318,7 +345,7 @@ export function CharacterCanvas() {
                   selected.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-full"
+                      className="px-2.5 py-1 text-xs font-medium bg-brand-light text-brand-active rounded-full"
                     >
                       {tag}
                     </span>
@@ -382,7 +409,7 @@ export function CharacterCanvas() {
               ) : selected.quotes.length > 0 ? (
                 <div className="space-y-2">
                   {selected.quotes.map((quote, i) => (
-                    <p key={i} className="text-sm text-muted-foreground italic pl-3 border-l-2 border-indigo-200">
+                    <p key={i} className="text-sm text-muted-foreground italic pl-3 border-l-2 border-brand-light">
                       "{quote}"
                     </p>
                   ))}
@@ -481,7 +508,7 @@ function ArrayEditorInline({
   color?: string
 }) {
   const colorMap: Record<string, string> = {
-    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    indigo: 'bg-brand-light text-brand-active border-brand-light',
     green: 'bg-green-50 text-green-700 border-green-200',
     amber: 'bg-amber-50 text-amber-700 border-amber-200',
   }
@@ -535,7 +562,7 @@ function ArrayEditorBlock({
           <input
             value={item}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 text-sm px-3 py-2 border border-border rounded-md bg-card outline-none focus:border-indigo-300"
+            className="flex-1 text-sm px-3 py-2 border border-border rounded-md bg-card outline-none focus:border-brand-hover"
             placeholder={placeholder}
           />
           <button
@@ -548,7 +575,7 @@ function ArrayEditorBlock({
       ))}
       <button
         onClick={onAdd}
-        className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700 px-1 py-1"
+        className="flex items-center gap-1 text-sm text-brand hover:text-brand-active px-1 py-1"
       >
         <Plus className="w-4 h-4" />
         <span>添加{placeholder.replace(/输入一?[个项]?/, '').replace(/\.\.\./, '')}</span>

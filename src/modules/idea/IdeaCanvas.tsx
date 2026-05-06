@@ -93,7 +93,7 @@ export function IdeaCanvas() {
             className={cn(
               'flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors',
               showArchived
-                ? 'bg-indigo-50 text-indigo-600'
+                ? 'bg-brand-light text-brand'
                 : 'text-muted-foreground hover:bg-accent'
             )}
           >
@@ -102,7 +102,7 @@ export function IdeaCanvas() {
           </button>
           <button
             onClick={handleCreateIdea}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-brand text-white rounded-md hover:bg-brand-active transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>添加便签</span>
@@ -157,7 +157,7 @@ export function IdeaCanvas() {
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => handleSaveEdit(idea.id)}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-brand text-white rounded hover:bg-brand-active"
                         >
                           <Check className="w-3 h-3" />
                           保存
@@ -264,7 +264,7 @@ export function IdeaCanvas() {
                             })
                           }}
                           title="恢复"
-                          className="p-1 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                          className="p-1 text-neutral-400 hover:text-brand hover:bg-brand-light rounded transition-colors"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                         </button>

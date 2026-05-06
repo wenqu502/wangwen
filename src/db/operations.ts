@@ -38,66 +38,147 @@ export async function readCharactersByWorkId(workId: string): Promise<Character[
   }
 }
 
-/** 按 workId 读取剧情节点列表 */
+/** 按 workId 读取剧情节点列表（P1-002: 自动解密敏感字段） */
 export async function readPlotNodesByWorkId(workId: string): Promise<PlotNode[]> {
   try {
-    return await db.plotNodes.where('workId').equals(workId).toArray()
+    const list = await db.plotNodes.where('workId').equals(workId).toArray()
+    return await Promise.all(list.map((n) => decryptObjectFields(n)))
   } catch (err) {
     throw new DBError('读取剧情数据失败', 'READ_ERROR', 'plotNodes', err)
   }
 }
 
-/** 按 workId 读取关系列表 */
+/** 按 workId 读取关系列表（P1-002: 自动解密敏感字段） */
 export async function readRelationsByWorkId(workId: string): Promise<RelationEdge[]> {
   try {
-    return await db.relations.where('workId').equals(workId).toArray()
+    const list = await db.relations.where('workId').equals(workId).toArray()
+    return await Promise.all(list.map((r) => decryptObjectFields(r)))
   } catch (err) {
     throw new DBError('读取关系数据失败', 'READ_ERROR', 'relations', err)
   }
 }
 
-/** 按 workId 读取体系列表 */
+/** 按 workId 读取体系列表（P1-002: 自动解密敏感字段） */
 export async function readSystemsByWorkId(workId: string): Promise<WorkSystem[]> {
   try {
-    return await db.systems.where('workId').equals(workId).toArray()
+    const list = await db.systems.where('workId').equals(workId).toArray()
+    return await Promise.all(list.map((s) => decryptObjectFields(s)))
   } catch (err) {
     throw new DBError('读取体系数据失败', 'READ_ERROR', 'systems', err)
   }
 }
 
-/** 按 workId 读取灵感列表 */
+/** 按 workId 读取灵感列表（P1-002: 自动解密敏感字段） */
 export async function readIdeasByWorkId(workId: string): Promise<Idea[]> {
   try {
-    return await db.ideas.where('workId').equals(workId).toArray()
+    const list = await db.ideas.where('workId').equals(workId).toArray()
+    return await Promise.all(list.map((i) => decryptObjectFields(i)))
   } catch (err) {
     throw new DBError('读取灵感数据失败', 'READ_ERROR', 'ideas', err)
   }
 }
 
-/** 按 workId 读取事件列表 */
+/** 按 workId 读取事件列表（P1-002: 自动解密敏感字段） */
 export async function readEventsByWorkId(workId: string): Promise<StoryEvent[]> {
   try {
-    return await db.events.where('workId').equals(workId).toArray()
+    const list = await db.events.where('workId').equals(workId).toArray()
+    return await Promise.all(list.map((e) => decryptObjectFields(e)))
   } catch (err) {
     throw new DBError('读取事件数据失败', 'READ_ERROR', 'events', err)
   }
 }
 
-/** 按 workId 读取事件边列表 */
+/** 按 workId 读取事件边列表（P1-002: 自动解密敏感字段） */
 export async function readEventEdgesByWorkId(workId: string): Promise<EventEdge[]> {
   try {
-    return await db.eventEdges.where('workId').equals(workId).toArray()
+    const list = await db.eventEdges.where('workId').equals(workId).toArray()
+    return await Promise.all(list.map((e) => decryptObjectFields(e)))
   } catch (err) {
     throw new DBError('读取事件边数据失败', 'READ_ERROR', 'eventEdges', err)
   }
 }
 
-/** 读取作品列表 */
+/** 读取作品列表（P1-002: 自动解密敏感字段） */
 export async function readAllWorks(): Promise<Work[]> {
   try {
-    return await db.works.toArray()
+    const list = await db.works.toArray()
+    return await Promise.all(list.map((w) => decryptObjectFields(w)))
   } catch (err) {
     throw new DBError('读取作品列表失败', 'READ_ERROR', 'works', err)
+  }
+}
+
+/** 添加作品（P1-002: 写入前加密敏感字段） */
+export async function writeAddWork(work: Work): Promise<WriteResult<Work>> {
+  try {
+    const encrypted = await encryptObjectFields(work)
+    await db.transaction('rw', db.works, async () => {
+      await db.works.add(encrypted)
+    })
+    return { success: true, data: work }
+  } catch (err) {
+    const dbErr = new DBError('添加作品失败', 'WRITE_ERROR', 'works', err)
+    console.error('[DB] writeAddWork:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 删除作品（级联删除关联数据） */
+export async function writeDeleteWork(id: string): Promise<WriteResult<void>> {
+  try {
+    await db.transaction('rw', [db.works, db.characters, db.plotNodes, db.relations, db.systems, db.ideas, db.events, db.eventEdges, db.conversations], async () => {
+      await db.works.delete(id)
+      await db.characters.where('workId').equals(id).delete()
+      await db.plotNodes.where('workId').equals(id).delete()
+      await db.relations.where('workId').equals(id).delete()
+      await db.systems.where('workId').equals(id).delete()
+      await db.ideas.where('workId').equals(id).delete()
+      await db.events.where('workId').equals(id).delete()
+      await db.eventEdges.where('workId').equals(id).delete()
+      await db.conversations.where('workId').equals(id).delete()
+    })
+    return { success: true }
+  } catch (err) {
+    const dbErr = new DBError('删除作品失败', 'WRITE_ERROR', 'works', err)
+    console.error('[DB] writeDeleteWork:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 添加作品（P1-002: 写入前加密敏感字段） */
+export async function writeAddWork(work: Work): Promise<WriteResult<Work>> {
+  try {
+    const encrypted = await encryptObjectFields(work)
+    await db.transaction('rw', db.works, async () => {
+      await db.works.add(encrypted)
+    })
+    return { success: true, data: work }
+  } catch (err) {
+    const dbErr = new DBError('添加作品失败', 'WRITE_ERROR', 'works', err)
+    console.error('[DB] writeAddWork:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+/** 删除作品（级联删除关联数据） */
+export async function writeDeleteWork(id: string): Promise<WriteResult<void>> {
+  try {
+    await db.transaction('rw', [db.works, db.characters, db.plotNodes, db.relations, db.systems, db.ideas, db.events, db.eventEdges, db.conversations], async () => {
+      await db.works.delete(id)
+      await db.characters.where('workId').equals(id).delete()
+      await db.plotNodes.where('workId').equals(id).delete()
+      await db.relations.where('workId').equals(id).delete()
+      await db.systems.where('workId').equals(id).delete()
+      await db.ideas.where('workId').equals(id).delete()
+      await db.events.where('workId').equals(id).delete()
+      await db.eventEdges.where('workId').equals(id).delete()
+      await db.conversations.where('workId').equals(id).delete()
+    })
+    return { success: true }
+  } catch (err) {
+    const dbErr = new DBError('删除作品失败', 'WRITE_ERROR', 'works', err)
+    console.error('[DB] writeDeleteWork:', dbErr)
+    return { success: false, error: dbErr }
   }
 }
 
@@ -163,11 +244,12 @@ export async function writeDeleteCharacter(id: string): Promise<WriteResult<void
   }
 }
 
-/** 添加剧情节点 */
+/** 添加剧情节点（P1-002: 写入前加密敏感字段） */
 export async function writeAddPlotNode(node: PlotNode): Promise<WriteResult<PlotNode>> {
   try {
+    const encrypted = await encryptObjectFields(node)
     await db.transaction('rw', db.plotNodes, async () => {
-      await db.plotNodes.add(node)
+      await db.plotNodes.add(encrypted)
     })
     return { success: true, data: node }
   } catch (err) {
@@ -177,11 +259,12 @@ export async function writeAddPlotNode(node: PlotNode): Promise<WriteResult<Plot
   }
 }
 
-/** 更新剧情节点 */
+/** 更新剧情节点（P1-002: 写入前加密敏感字段） */
 export async function writeUpdatePlotNode(node: PlotNode): Promise<WriteResult<PlotNode>> {
   try {
+    const encrypted = await encryptObjectFields(node)
     await db.transaction('rw', db.plotNodes, async () => {
-      await db.plotNodes.put(node)
+      await db.plotNodes.put(encrypted)
     })
     return { success: true, data: node }
   } catch (err) {
@@ -216,11 +299,12 @@ export async function writeDeletePlotNode(id: string): Promise<WriteResult<void>
   }
 }
 
-/** 添加关系 */
+/** 添加关系（P1-002: 写入前加密敏感字段） */
 export async function writeAddRelation(edge: RelationEdge): Promise<WriteResult<RelationEdge>> {
   try {
+    const encrypted = await encryptObjectFields(edge)
     await db.transaction('rw', db.relations, async () => {
-      await db.relations.add(edge)
+      await db.relations.add(encrypted)
     })
     return { success: true, data: edge }
   } catch (err) {
@@ -230,11 +314,12 @@ export async function writeAddRelation(edge: RelationEdge): Promise<WriteResult<
   }
 }
 
-/** 更新关系 */
+/** 更新关系（P1-002: 写入前加密敏感字段） */
 export async function writeUpdateRelation(edge: RelationEdge): Promise<WriteResult<RelationEdge>> {
   try {
+    const encrypted = await encryptObjectFields(edge)
     await db.transaction('rw', db.relations, async () => {
-      await db.relations.put(edge)
+      await db.relations.put(encrypted)
     })
     return { success: true, data: edge }
   } catch (err) {
@@ -258,11 +343,12 @@ export async function writeDeleteRelation(id: string): Promise<WriteResult<void>
   }
 }
 
-/** 添加体系 */
+/** 添加体系（P1-002: 写入前加密敏感字段） */
 export async function writeAddSystem(system: WorkSystem): Promise<WriteResult<WorkSystem>> {
   try {
+    const encrypted = await encryptObjectFields(system)
     await db.transaction('rw', db.systems, async () => {
-      await db.systems.add(system)
+      await db.systems.add(encrypted)
     })
     return { success: true, data: system }
   } catch (err) {
@@ -272,11 +358,12 @@ export async function writeAddSystem(system: WorkSystem): Promise<WriteResult<Wo
   }
 }
 
-/** 更新体系 */
+/** 更新体系（P1-002: 写入前加密敏感字段） */
 export async function writeUpdateSystem(system: WorkSystem): Promise<WriteResult<WorkSystem>> {
   try {
+    const encrypted = await encryptObjectFields(system)
     await db.transaction('rw', db.systems, async () => {
-      await db.systems.put(system)
+      await db.systems.put(encrypted)
     })
     return { success: true, data: system }
   } catch (err) {
@@ -300,11 +387,12 @@ export async function writeDeleteSystem(id: string): Promise<WriteResult<void>> 
   }
 }
 
-/** 添加灵感 */
+/** 添加灵感（P1-002: 写入前加密敏感字段） */
 export async function writeAddIdea(idea: Idea): Promise<WriteResult<Idea>> {
   try {
+    const encrypted = await encryptObjectFields(idea)
     await db.transaction('rw', db.ideas, async () => {
-      await db.ideas.add(idea)
+      await db.ideas.add(encrypted)
     })
     return { success: true, data: idea }
   } catch (err) {
@@ -314,11 +402,12 @@ export async function writeAddIdea(idea: Idea): Promise<WriteResult<Idea>> {
   }
 }
 
-/** 更新灵感 */
+/** 更新灵感（P1-002: 写入前加密敏感字段） */
 export async function writeUpdateIdea(idea: Idea): Promise<WriteResult<Idea>> {
   try {
+    const encrypted = await encryptObjectFields(idea)
     await db.transaction('rw', db.ideas, async () => {
-      await db.ideas.put(idea)
+      await db.ideas.put(encrypted)
     })
     return { success: true, data: idea }
   } catch (err) {
@@ -342,11 +431,12 @@ export async function writeDeleteIdea(id: string): Promise<WriteResult<void>> {
   }
 }
 
-/** 添加事件 */
+/** 添加事件（P1-002: 写入前加密敏感字段） */
 export async function writeAddEvent(event: StoryEvent): Promise<WriteResult<StoryEvent>> {
   try {
+    const encrypted = await encryptObjectFields(event)
     await db.transaction('rw', db.events, async () => {
-      await db.events.add(event)
+      await db.events.add(encrypted)
     })
     return { success: true, data: event }
   } catch (err) {
@@ -356,11 +446,12 @@ export async function writeAddEvent(event: StoryEvent): Promise<WriteResult<Stor
   }
 }
 
-/** 更新事件 */
+/** 更新事件（P1-002: 写入前加密敏感字段） */
 export async function writeUpdateEvent(event: StoryEvent): Promise<WriteResult<StoryEvent>> {
   try {
+    const encrypted = await encryptObjectFields(event)
     await db.transaction('rw', db.events, async () => {
-      await db.events.put(event)
+      await db.events.put(encrypted)
     })
     return { success: true, data: event }
   } catch (err) {
@@ -387,11 +478,12 @@ export async function writeDeleteEvent(id: string): Promise<WriteResult<void>> {
   }
 }
 
-/** 添加事件边 */
+/** 添加事件边（P1-002: 写入前加密敏感字段） */
 export async function writeAddEventEdge(edge: EventEdge): Promise<WriteResult<EventEdge>> {
   try {
+    const encrypted = await encryptObjectFields(edge)
     await db.transaction('rw', db.eventEdges, async () => {
-      await db.eventEdges.add(edge)
+      await db.eventEdges.add(encrypted)
     })
     return { success: true, data: edge }
   } catch (err) {
@@ -401,11 +493,12 @@ export async function writeAddEventEdge(edge: EventEdge): Promise<WriteResult<Ev
   }
 }
 
-/** 更新事件边 */
+/** 更新事件边（P1-002: 写入前加密敏感字段） */
 export async function writeUpdateEventEdge(edge: EventEdge): Promise<WriteResult<EventEdge>> {
   try {
+    const encrypted = await encryptObjectFields(edge)
     await db.transaction('rw', db.eventEdges, async () => {
-      await db.eventEdges.put(edge)
+      await db.eventEdges.put(encrypted)
     })
     return { success: true, data: edge }
   } catch (err) {
@@ -480,7 +573,22 @@ export async function loadAllDataByWorkId(workId: string) {
       },
     )
     const decryptedCharacters = await Promise.all(characters.map((c) => decryptObjectFields(c)))
-    return { success: true as const, characters: decryptedCharacters, plotNodes, relations, systems, ideas, events, eventEdges }
+    const decryptedPlotNodes = await Promise.all(plotNodes.map((n) => decryptObjectFields(n)))
+    const decryptedRelations = await Promise.all(relations.map((r) => decryptObjectFields(r)))
+    const decryptedSystems = await Promise.all(systems.map((s) => decryptObjectFields(s)))
+    const decryptedIdeas = await Promise.all(ideas.map((i) => decryptObjectFields(i)))
+    const decryptedEvents = await Promise.all(events.map((e) => decryptObjectFields(e)))
+    const decryptedEventEdges = await Promise.all(eventEdges.map((e) => decryptObjectFields(e)))
+    return {
+      success: true as const,
+      characters: decryptedCharacters,
+      plotNodes: decryptedPlotNodes,
+      relations: decryptedRelations,
+      systems: decryptedSystems,
+      ideas: decryptedIdeas,
+      events: decryptedEvents,
+      eventEdges: decryptedEventEdges,
+    }
   } catch (err) {
     const dbErr = new DBError('加载数据失败', 'READ_ERROR', undefined, err)
     console.error('[DB] loadAllDataByWorkId:', dbErr)

@@ -52,6 +52,7 @@ export interface PlotNode {
   payoff: Payoff[]
   wordCountTarget?: number
   wordCountActual?: number
+  position?: { x: number; y: number }
   createdAt: string
   updatedAt: string
 }

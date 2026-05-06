@@ -76,14 +76,14 @@ export function EncryptionSettings() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="设置加密密码（至少6位）"
-            className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
           />
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="确认密码"
-            className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
           />
 
           {error && (
@@ -98,7 +98,7 @@ export function EncryptionSettings() {
           <button
             onClick={handleEnable}
             disabled={!password || !confirmPassword}
-            className="w-full py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+            className="w-full py-2 text-sm font-medium bg-brand text-white rounded-lg hover:bg-brand-active disabled:opacity-40 transition-colors"
           >
             启用加密
           </button>

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { useInitData } from '@/hooks/use-init-data'
 import type { ModuleTab } from '@/types'
@@ -9,6 +9,11 @@ import { cn } from '@/lib/utils'
 import { Loader2, Moon, Sun } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { exportWork } from '@/lib/export'
+import { importWork } from '@/lib/import'
+import { showToast } from '@/utils/toast'
+import { readAllWorks, writeAddWork } from '@/db/operations'
+import { generateWorkId } from '@/utils/id-generator'
+import type { Work } from '@/types'
 import { SearchModal } from '@/components/search/SearchModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { OfflineBanner } from '@/components/OfflineBanner'
@@ -32,9 +37,12 @@ import {
   PanelRightOpen,
   Search,
   Download,
+  Upload,
   Settings,
   BookOpen,
   ChevronDown,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 
 const TABS = [
@@ -84,6 +92,10 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [isWorkMenuOpen, setIsWorkMenuOpen] = useState(false)
+  const [works, setWorks] = useState<Work[]>([])
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false
     const saved = localStorage.getItem('wangwen-theme')
@@ -156,12 +168,80 @@ function App() {
     setIsExporting(true)
     try {
       await exportWork(currentWorkId)
+      showToast('导出成功', { type: 'success' })
     } catch (err) {
       console.error('导出失败', err)
+      showToast(`导出失败: ${err instanceof Error ? err.message : '未知错误'}`, { type: 'error' })
     } finally {
       setIsExporting(false)
     }
   }, [currentWorkId, isExporting])
+
+  // Batch7: 加载作品列表
+  const loadWorks = useCallback(async () => {
+    try {
+      const list = await readAllWorks()
+      setWorks(list)
+      // 如果没有作品，自动创建一个默认作品
+      if (list.length === 0) {
+        const defaultWork: Work = {
+          id: 'default',
+          name: '我的第一部作品',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        await writeAddWork(defaultWork)
+        setWorks([defaultWork])
+        setCurrentWorkId('default')
+      }
+    } catch (err) {
+      console.error('加载作品列表失败:', err)
+    }
+  }, [setCurrentWorkId])
+
+  useEffect(() => {
+    loadWorks()
+  }, [loadWorks])
+
+  // Batch7: 导入作品
+  const handleImport = useCallback(async (file: File) => {
+    setIsImporting(true)
+    try {
+      const result = await importWork(file)
+      if (result.success) {
+        showToast('导入成功', { type: 'success' })
+        await loadWorks()
+        setCurrentWorkId(result.workId)
+      } else {
+        showToast(result.error, { type: 'error' })
+      }
+    } catch (err) {
+      showToast(`导入失败: ${err instanceof Error ? err.message : '未知错误'}`, { type: 'error' })
+    } finally {
+      setIsImporting(false)
+    }
+  }, [loadWorks, setCurrentWorkId])
+
+  // Batch7: 创建新作品
+  const handleCreateWork = useCallback(async () => {
+    const name = window.prompt('请输入作品名称:')
+    if (!name?.trim()) return
+    const work: Work = {
+      id: generateWorkId(),
+      name: name.trim(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    const result = await writeAddWork(work)
+    if (result.success) {
+      showToast('作品创建成功', { type: 'success' })
+      await loadWorks()
+      setCurrentWorkId(work.id)
+      setIsWorkMenuOpen(false)
+    } else {
+      showToast('作品创建失败', { type: 'error' })
+    }
+  }, [loadWorks, setCurrentWorkId])
 
   // 全局键盘快捷键
   useEffect(() => {
@@ -223,16 +303,54 @@ function App() {
       <header className="h-[52px] flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <BookOpen className="w-5 h-5 text-brand dark:text-brand-hover" />
             <span className="font-semibold text-foreground">织文</span>
           </div>
           <div className="h-5 w-px bg-border" />
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <span className="font-medium">
-              {currentWorkId ? '当前作品' : '未选择作品'}
-            </span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
+          {/* Batch7: 作品切换下拉 */}
+          <div className="relative">
+            <button
+              onClick={() => setIsWorkMenuOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="font-medium max-w-[120px] truncate">
+                {works.find((w) => w.id === currentWorkId)?.name || '未选择作品'}
+              </span>
+              <ChevronDown className={cn('w-4 h-4 transition-transform', isWorkMenuOpen && 'rotate-180')} />
+            </button>
+            {isWorkMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsWorkMenuOpen(false)} />
+                <div className="absolute top-full left-0 mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-50 py-1">
+                  <div className="px-3 py-1.5 text-xs text-muted-foreground font-medium">作品列表</div>
+                  {works.map((work) => (
+                    <button
+                      key={work.id}
+                      onClick={() => {
+                        setCurrentWorkId(work.id)
+                        setIsWorkMenuOpen(false)
+                      }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between',
+                        currentWorkId === work.id && 'text-brand bg-brand-light/50'
+                      )}
+                    >
+                      <span className="truncate">{work.name}</span>
+                      {currentWorkId === work.id && <span className="text-xs">✓</span>}
+                    </button>
+                  ))}
+                  <div className="border-t border-border my-1" />
+                  <button
+                    onClick={handleCreateWork}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center gap-2 text-brand"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    新建作品
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -242,6 +360,25 @@ function App() {
           >
             <Search className="w-4 h-4" />
             <span>搜索</span>
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded-md transition-colors disabled:opacity-50"
+          >
+            {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            <span>导入</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleImport(file)
+                e.target.value = ''
+              }}
+            />
           </button>
           <button
             onClick={handleExport}
@@ -271,7 +408,7 @@ function App() {
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors',
               isChatPanelOpen
-                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30'
+                      ? 'text-brand dark:text-brand-hover bg-brand-light dark:bg-brand-active/10'
                 : 'text-muted-foreground hover:bg-accent'
             )}
           >
@@ -310,7 +447,7 @@ function App() {
                   className={cn(
                     'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-colors',
                     isActive
-                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30'
+                ? 'text-brand dark:text-brand-hover bg-brand-light dark:bg-brand-active/10'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                   )}
                 >

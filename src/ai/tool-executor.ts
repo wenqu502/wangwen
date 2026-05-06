@@ -31,6 +31,14 @@ function getCurrentWorkId(): string {
 }
 
 export function executeTool(toolCall: ToolCall): ToolResult {
+  // P1-003: 处理 JSON 解析失败的 tool call
+  if (toolCall.arguments._parseError === true) {
+    return {
+      success: false,
+      message: `AI 返回的参数解析失败，原始参数: ${String(toolCall.arguments._rawArgs || '').slice(0, 200)}`,
+    }
+  }
+
   // 1. 运行时参数校验
   const validation = validateToolInput(toolCall.name, toolCall.arguments)
   if (!validation.success) {

@@ -33,6 +33,8 @@ export interface AIChatOptions {
   stream?: boolean
   temperature?: number
   maxTokens?: number
+  /** AbortSignal for user-initiated cancellation */
+  signal?: AbortSignal
 }
 
 export type AIStreamChunk = {

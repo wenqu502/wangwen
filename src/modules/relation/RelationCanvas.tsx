@@ -83,7 +83,7 @@ export function RelationCanvas() {
             onClick={() => setShowHidden(!showHidden)}
             className={cn(
               'flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md transition-colors',
-              showHidden ? 'bg-indigo-50 text-indigo-600' : 'text-muted-foreground hover:bg-accent'
+              showHidden ? 'bg-brand-light text-brand' : 'text-muted-foreground hover:bg-accent'
             )}
           >
             {showHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -91,7 +91,7 @@ export function RelationCanvas() {
           </button>
           <button
             onClick={() => setIsAdding(!isAdding)}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-brand text-white rounded-md hover:bg-brand-active transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>添加关系</span>
@@ -173,7 +173,7 @@ export function RelationCanvas() {
               <div className="flex gap-2">
                 <button
                   onClick={handleAddRelation}
-                  className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                  className="px-4 py-1.5 text-sm bg-brand text-white rounded-md hover:bg-brand-active"
                 >
                   确认
                 </button>
@@ -207,7 +207,7 @@ export function RelationCanvas() {
                     'text-xs px-2 py-0.5 rounded-full font-medium',
                     edge.isHidden
                       ? 'bg-purple-50 text-purple-600'
-                      : 'bg-indigo-50 text-indigo-600'
+                      : 'bg-brand-light text-brand'
                   )}>
                     {edge.type}
                   </span>

@@ -31,10 +31,10 @@ function PlotNodeCard({ data, selected }: { data: PlotNodeData; selected?: boole
   const { node, onSelect, onDelete } = data
 
   const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-    written: { bg: 'bg-green-50', text: 'text-green-700', label: '已写' },
-    writing: { bg: 'bg-blue-50', text: 'text-blue-700', label: '进行中' },
-    todo: { bg: 'bg-gray-50', text: 'text-gray-500', label: '待写' },
-    abandoned: { bg: 'bg-red-50', text: 'text-red-500', label: '废弃' },
+    written: { bg: 'bg-success-light', text: 'text-success', label: '已写' },
+    writing: { bg: 'bg-brand-light', text: 'text-brand', label: '进行中' },
+    todo: { bg: 'bg-bg-page', text: 'text-text-secondary', label: '待写' },
+    abandoned: { bg: 'bg-error-light', text: 'text-error', label: '废弃' },
   }
 
   const status = statusConfig[node.status] || statusConfig.todo
@@ -45,7 +45,7 @@ function PlotNodeCard({ data, selected }: { data: PlotNodeData; selected?: boole
       className={cn(
         'w-[180px] rounded-lg border bg-card shadow-sm transition-all',
         selected
-          ? 'border-indigo-400 ring-2 ring-indigo-100 shadow-md'
+          ? 'border-brand ring-2 ring-brand-light shadow-md'
           : 'border-border hover:border-border',
         isAbandoned && 'opacity-50'
       )}
@@ -79,7 +79,7 @@ function PlotNodeCard({ data, selected }: { data: PlotNodeData; selected?: boole
             {status.label}
           </span>
           {node.type !== 'trunk' && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-light text-brand font-medium">
               {node.type === 'branch' ? '分支' : node.type === 'if' ? '条件' : '伏笔'}
             </span>
           )}
@@ -171,7 +171,8 @@ export function PlotCanvas() {
     const rfNodes: Node[] = nodeList.map((node) => ({
       id: node.id,
       type: 'plotNode',
-      position: positions[node.id] || { x: 0, y: 0 },
+      // P1-006: 优先使用已保存的位置，否则自动布局
+      position: node.position || positions[node.id] || { x: 0, y: 0 },
       data: {
         node,
         onSelect: (id: string) => selectNode(id),
@@ -190,7 +191,7 @@ export function PlotCanvas() {
           type: 'smoothstep',
           animated: node.type === 'branch',
           style: {
-            stroke: node.type === 'branch' ? '#6366f1' : '#9ca3af',
+            stroke: node.type === 'branch' ? '#4756ff' : '#9ca3af',
             strokeWidth: node.type === 'branch' ? 2 : 1.5,
             strokeDasharray: node.status === 'abandoned' ? '5 5' : undefined,
           },
@@ -202,13 +203,12 @@ export function PlotCanvas() {
     setEdges(rfEdges)
   }, [nodeList, selectedNode, selectNode, deleteNode, setNodes, setEdges])
 
-  // 节点位置变化时同步回 store
+  // P1-006: 节点拖拽位置持久化
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
-      updateNode(node.id, (_n) => {
-        // 如果需要持久化位置，可以在这里更新 store
-        // 当前 PlotNode 类型没有 position 字段，暂不持久化
-        console.log('[PlotCanvas] Node moved:', node.id, node.position)
+      updateNode(node.id, (n) => {
+        n.position = { x: node.position.x, y: node.position.y }
+        n.updatedAt = new Date().toISOString()
       })
     },
     [updateNode]
@@ -243,7 +243,7 @@ export function PlotCanvas() {
         <h2 className="text-lg font-semibold text-foreground">剧情分支树</h2>
         <button
           onClick={handleCreateNode}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-brand text-white rounded-md hover:bg-brand-active transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>添加节点</span>
@@ -280,10 +280,10 @@ export function PlotCanvas() {
               nodeColor={(node) => {
                 const data = node.data as unknown as PlotNodeData
                 const status = data?.node?.status
-                if (status === 'written') return '#22c55e'
-                if (status === 'writing') return '#3b82f6'
-                if (status === 'abandoned') return '#ef4444'
-                return '#9ca3af'
+                if (status === 'written') return '#15b25e'
+                if (status === 'writing') return '#4756ff'
+                if (status === 'abandoned') return '#ff471f'
+                return '#c9cdd4'
               }}
               className="!bg-card !border !border-border !rounded-lg"
             />
