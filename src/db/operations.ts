@@ -109,7 +109,7 @@ export async function readAllWorks(): Promise<Work[]> {
 }
 
 /** 添加作品（P1-002: 写入前加密敏感字段） */
-export async function writeAddWork(work: Work): Promise Promise<WriteResultResult<Work>> {
+export async function writeAddWork(work: Work): Promise<WriteResult<Work>> {
   try {
     const encrypted = await encryptObjectFields(work)
     await db.transaction('rw', db.works, async () => {
@@ -124,7 +124,7 @@ export async function writeAddWork(work: Work): Promise Promise<WriteResultResul
 }
 
 /** 删除作品（级联删除关联数据） */
-export async function writeDeleteWork(id: string): Promise Promise<WriteResult<void>> {
+export async function writeDeleteWork(id: string): Promise<WriteResult<void>> {
   try {
     await db.transaction('rw', [db.works, db.characters, db.plotNodes, db.relations, db.systems, db.ideas, db.events, db.eventEdges, db.conversations], async () => {
       await db.works.delete(id)
