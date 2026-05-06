@@ -1,24 +1,28 @@
 /// <reference types="vite/client" />
 import OpenAI from 'openai'
-import { AI_CONFIG } from '@/config/env'
+import { AI_CONFIG, APP_CONFIG } from '@/config/env'
 import type { AIChatOptions, AIStreamChunk, AIChatMessage } from './types'
 
-// === API Key 安全读取策略 ===
+// === API Key 安全读取策略 (P1-001) ===
 // 1. 优先从 localStorage 读取（用户通过 UI 输入，不在代码中硬编码）
-// 2. 回退到环境变量（开发时可用 .env.local，生产构建应清空）
+// 2. 仅在开发环境回退到环境变量（生产构建应清空 VITE_AI_API_KEY）
 // 3. 如果都没有，提示用户输入
 function getApiKey(): string {
   const LS_KEY = 'wangwen:deepseek-api-key'
   const fromStorage = localStorage.getItem(LS_KEY)
   if (fromStorage) return fromStorage
 
+  // 仅开发环境允许 env 回退
   const fromEnv = AI_CONFIG.apiKey
-  if (fromEnv && fromEnv !== 'your_api_key_here') return fromEnv
+  if (APP_CONFIG.isDev && fromEnv && fromEnv !== 'your_api_key_here') return fromEnv
 
   return ''
 }
 
 const BASE_URL = AI_CONFIG.baseURL
+const REQUEST_TIMEOUT_MS = 30000
+const MAX_RETRIES = 2
+const MAX_CONTEXT_MESSAGES = 20
 
 function createClient() {
   const apiKey = getApiKey()
@@ -26,7 +30,18 @@ function createClient() {
     baseURL: BASE_URL,
     apiKey,
     dangerouslyAllowBrowser: true,
+    timeout: REQUEST_TIMEOUT_MS,
+    maxRetries: MAX_RETRIES,
   })
+}
+
+/** 截断消息列表，保留系统提示词和最近 N 条消息 (P1-003) */
+function truncateMessages(messages: AIChatOptions['messages']): AIChatOptions['messages'] {
+  if (messages.length <= MAX_CONTEXT_MESSAGES + 1) return messages
+  const systemMsgs = messages.filter((m) => m.role === 'system')
+  const nonSystem = messages.filter((m) => m.role !== 'system')
+  const recent = nonSystem.slice(-MAX_CONTEXT_MESSAGES)
+  return [...systemMsgs, ...recent]
 }
 
 export function hasApiKey(): boolean {
@@ -48,29 +63,42 @@ export async function* chatStream(options: AIChatOptions): AsyncGenerator<AIStre
 
   const client = createClient()
   const isReasoningModel = AI_CONFIG.model.includes('v4') || AI_CONFIG.model.includes('reasoner')
-  const stream = await client.chat.completions.create({
-    model: AI_CONFIG.model,
-    messages: options.messages as any,
-    tools: options.tools as any,
-    stream: true,
-    max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
-    ...(isReasoningModel && AI_CONFIG.reasoning
-      ? {
-          // V4 Pro / Reasoner 模型：开启思考模式，通过 extra_body 传递 reasoning_effort
-          // temperature 对 reasoning 模型不生效，此处省略
-          extra_body: {
-            reasoning_effort: AI_CONFIG.reasoningEffort,
-          },
-        }
-      : {
-          // 非 reasoning 模型：正常传递 temperature
-          temperature: options.temperature ?? AI_CONFIG.temperature,
-        }),
-  } as any)
+  const messages = truncateMessages(options.messages)
 
-  for await (const chunk of stream) {
-    yield chunk as unknown as AIStreamChunk
+  let lastError: Error | undefined
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const stream = await client.chat.completions.create({
+        model: AI_CONFIG.model,
+        messages: messages as any,
+        tools: options.tools as any,
+        stream: true,
+        max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
+        ...(isReasoningModel && AI_CONFIG.reasoning
+          ? {
+              extra_body: {
+                reasoning_effort: AI_CONFIG.reasoningEffort,
+              },
+            }
+          : {
+              temperature: options.temperature ?? AI_CONFIG.temperature,
+            }),
+      } as any)
+
+      for await (const chunk of stream) {
+        yield chunk as unknown as AIStreamChunk
+      }
+      return
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[AI] chatStream 失败，${MAX_RETRIES - attempt} 次重试剩余:`, lastError.message)
+        await delay(1000 * (attempt + 1))
+      }
+    }
   }
+
+  throw lastError || new Error('AI 流式请求失败')
 }
 
 export async function chatOnce(options: AIChatOptions): Promise<string> {
@@ -80,23 +108,38 @@ export async function chatOnce(options: AIChatOptions): Promise<string> {
 
   const client = createClient()
   const isReasoningModel = AI_CONFIG.model.includes('v4') || AI_CONFIG.model.includes('reasoner')
-  const response = await client.chat.completions.create({
-    model: AI_CONFIG.model,
-    messages: options.messages as any,
-    tools: options.tools as any,
-    max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
-    ...(isReasoningModel && AI_CONFIG.reasoning
-      ? {
-          extra_body: {
-            reasoning_effort: AI_CONFIG.reasoningEffort,
-          },
-        }
-      : {
-          temperature: options.temperature ?? AI_CONFIG.temperature,
-        }),
-  } as any)
+  const messages = truncateMessages(options.messages)
 
-  return response.choices[0]?.message?.content ?? ''
+  let lastError: Error | undefined
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await client.chat.completions.create({
+        model: AI_CONFIG.model,
+        messages: messages as any,
+        tools: options.tools as any,
+        max_tokens: options.maxTokens ?? AI_CONFIG.maxTokens,
+        ...(isReasoningModel && AI_CONFIG.reasoning
+          ? {
+              extra_body: {
+                reasoning_effort: AI_CONFIG.reasoningEffort,
+              },
+            }
+          : {
+              temperature: options.temperature ?? AI_CONFIG.temperature,
+            }),
+      } as any)
+
+      return response.choices[0]?.message?.content ?? ''
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      if (attempt < MAX_RETRIES) {
+        console.warn(`[AI] chatOnce 失败，${MAX_RETRIES - attempt} 次重试剩余:`, lastError.message)
+        await delay(1000 * (attempt + 1))
+      }
+    }
+  }
+
+  throw lastError || new Error('AI 请求失败')
 }
 
 export function createSystemPrompt(base: string, context: string): AIChatMessage {
@@ -110,6 +153,7 @@ export function createSystemPrompt(base: string, context: string): AIChatMessage
 import { CHARACTER_SYSTEM_PROMPT } from '@/modules/character/ai-prompts'
 import { PLOT_SYSTEM_PROMPT } from '@/modules/plot/ai-prompts'
 import { SYSTEM_SYSTEM_PROMPT } from '@/modules/system/ai-prompts'
+import { buildWorkContext } from './context-builder'
 
 const BASE_SYSTEM_PROMPT = `
 你是织文 (WangWen) 的 AI 创作助手，专门协助网文作者进行创作。
@@ -117,7 +161,7 @@ const BASE_SYSTEM_PROMPT = `
 当用户提出创作需求时，直接调用对应的工具完成操作，不要只返回文本描述。
 ` as const
 
-export function buildSystemPrompt(currentTab?: string): AIChatMessage {
+export async function buildSystemPrompt(currentTab?: string, currentWorkId?: string | null): Promise<AIChatMessage> {
   let modulePrompt = ''
   switch (currentTab) {
     case 'character':
@@ -133,9 +177,12 @@ export function buildSystemPrompt(currentTab?: string): AIChatMessage {
       modulePrompt = ''
   }
 
+  // P0-001: 注入真实作品上下文
+  const context = await buildWorkContext(currentWorkId || null)
+
   const content = modulePrompt
-    ? `${BASE_SYSTEM_PROMPT}\n\n---\n\n${modulePrompt}\n\n---\n\n当前暂无作品上下文。`
-    : `${BASE_SYSTEM_PROMPT}\n\n---\n\n当前暂无作品上下文。`
+    ? `${BASE_SYSTEM_PROMPT}\n\n---\n\n${modulePrompt}\n\n---\n\n${context}`
+    : `${BASE_SYSTEM_PROMPT}\n\n---\n\n${context}`
 
   return { role: 'system', content }
 }

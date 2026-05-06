@@ -203,6 +203,50 @@ export function shouldEncryptField(fieldName: string): boolean {
     'appearanceDesc',
     'innerThoughts',
     'privateNotes',
+    'trauma',
+    'goals',
+    'arc',
   ]
   return sensitiveFields.includes(fieldName)
+}
+
+/**
+ * 递归加密对象中的敏感字段
+ */
+export async function encryptObjectFields<T extends Record<string, unknown>>(obj: T): Promise<T> {
+  if (!isEncryptionReady()) return obj
+  const result: Record<string, unknown> = { ...obj }
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && shouldEncryptField(key) && value.length > 0) {
+      result[key] = await encryptField(value)
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      result[key] = await encryptObjectFields(value as Record<string, unknown>)
+    }
+  }
+
+  return result as T
+}
+
+/**
+ * 递归解密对象中的敏感字段
+ */
+export async function decryptObjectFields<T extends Record<string, unknown>>(obj: T): Promise<T> {
+  if (!isEncryptionReady()) return obj
+  const result: Record<string, unknown> = { ...obj }
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'object' && value !== null && 'v' in value && 'salt' in value && 'iv' in value && 'data' in value) {
+      try {
+        result[key] = await decryptField(value as EncryptedField)
+      } catch {
+        // 解密失败保留原值（可能是明文旧数据）
+        result[key] = value
+      }
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      result[key] = await decryptObjectFields(value as Record<string, unknown>)
+    }
+  }
+
+  return result as T
 }

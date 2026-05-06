@@ -66,7 +66,20 @@ export function executeTool(toolCall: ToolCall): ToolResult {
   }
 }
 
+function safeExecute(name: string, fn: () => ToolResult): ToolResult {
+  try {
+    return fn()
+  } catch (err) {
+    console.error(`[Tool] ${name} 执行失败:`, err)
+    return {
+      success: false,
+      message: `工具执行出错: ${err instanceof Error ? err.message : '未知错误'}`,
+    }
+  }
+}
+
 function handleCreateCharacter(args: Record<string, unknown>): ToolResult {
+  return safeExecute('createCharacter', () => {
   const store = useCharacterStore.getState()
   const now = new Date().toISOString()
   const personalityArg = args.personality as Record<string, unknown> | undefined
@@ -92,7 +105,6 @@ function handleCreateCharacter(args: Record<string, unknown>): ToolResult {
     arc: args.arc ? String(args.arc) : undefined,
     quotes: Array.isArray(args.quotes) ? args.quotes.map(String) : [],
     abilities: Array.isArray(args.abilities) ? args.abilities.map(String) : [],
-    relations: [],
     status: 'alive',
     images: [],
     createdAt: now,
@@ -105,9 +117,11 @@ function handleCreateCharacter(args: Record<string, unknown>): ToolResult {
     message: `已创建角色「${character.name}」`,
     data: { id: character.id, name: character.name },
   }
+  })
 }
 
 function handleUpdateCharacter(args: Record<string, unknown>): ToolResult {
+  return safeExecute('updateCharacter', () => {
   const store = useCharacterStore.getState()
   const id = String(args.characterId)
   const changes = args.changes as Record<string, unknown> | undefined
@@ -144,9 +158,11 @@ function handleUpdateCharacter(args: Record<string, unknown>): ToolResult {
   })
 
   return { success: true, message: `已更新角色「${char.name}」` }
+  })
 }
 
 function handleCreatePlotNode(args: Record<string, unknown>): ToolResult {
+  return safeExecute('createPlotNode', () => {
   const store = usePlotStore.getState()
   const now = new Date().toISOString()
 
@@ -184,9 +200,11 @@ function handleCreatePlotNode(args: Record<string, unknown>): ToolResult {
     message: `已创建剧情节点「${node.title}」`,
     data: { id: node.id, title: node.title },
   }
+  })
 }
 
 function handleCreateRelation(args: Record<string, unknown>): ToolResult {
+  return safeExecute('createRelation', () => {
   const store = useRelationStore.getState()
   const now = new Date().toISOString()
 
@@ -211,9 +229,11 @@ function handleCreateRelation(args: Record<string, unknown>): ToolResult {
     message: `已创建关系: ${edge.sourceId} → ${edge.targetId}`,
     data: { id: edge.id },
   }
+  })
 }
 
 function handleCreateSystem(args: Record<string, unknown>): ToolResult {
+  return safeExecute('createSystem', () => {
   const store = useSystemStore.getState()
   const now = new Date().toISOString()
 
@@ -269,9 +289,11 @@ function handleCreateSystem(args: Record<string, unknown>): ToolResult {
     message: `已创建体系「${system.name}」`,
     data: { id: system.id, name: system.name },
   }
+  })
 }
 
 function handleCreateIdea(args: Record<string, unknown>): ToolResult {
+  return safeExecute('createIdea', () => {
   const store = useIdeaStore.getState()
   const now = new Date().toISOString()
 
@@ -294,5 +316,6 @@ function handleCreateIdea(args: Record<string, unknown>): ToolResult {
     message: '已记录灵感',
     data: { id: idea.id },
   }
+  })
 }
 

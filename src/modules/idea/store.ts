@@ -20,7 +20,7 @@ interface IdeaState {
 }
 
 export const useIdeaStore = create<IdeaState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     ideas: {},
     selectedId: null,
 
@@ -30,54 +30,113 @@ export const useIdeaStore = create<IdeaState>()(
         for (const i of list) state.ideas[i.id] = i
       }),
 
-    addIdea: (idea) =>
+    addIdea: (idea) => {
       set((state) => {
         state.ideas[idea.id] = idea
-        writeAddIdea(idea).catch((err) => console.error('[DB] addIdea failed:', err))
-      }),
+      })
+      writeAddIdea(idea).then((result) => {
+        if (!result.success) {
+          set((state) => {
+            delete state.ideas[idea.id]
+          })
+          console.error('[Store] addIdea rollback:', result.error)
+        }
+      })
+    },
 
-    updateIdea: (id, updater) =>
+    updateIdea: (id, updater) => {
+      const previous = get().ideas[id] ? structuredClone(get().ideas[id]) : undefined
       set((state) => {
         const i = state.ideas[id]
-        if (i) {
-          updater(i)
-          writeUpdateIdea(i).catch((err) => console.error('[DB] updateIdea failed:', err))
-        }
-      }),
+        if (i) updater(i)
+      })
+      const updated = get().ideas[id]
+      if (updated) {
+        writeUpdateIdea(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.ideas[id] = previous
+            })
+            console.error('[Store] updateIdea rollback:', result.error)
+          }
+        })
+      }
+    },
 
-    deleteIdea: (id) =>
+    deleteIdea: (id) => {
+      const previous = get().ideas[id] ? structuredClone(get().ideas[id]) : undefined
+      const previousSelected = get().selectedId
       set((state) => {
         delete state.ideas[id]
         if (state.selectedId === id) state.selectedId = null
-        writeDeleteIdea(id).catch((err) => console.error('[DB] deleteIdea failed:', err))
-      }),
+      })
+      writeDeleteIdea(id).then((result) => {
+        if (!result.success && previous) {
+          set((state) => {
+            state.ideas[id] = previous
+            state.selectedId = previousSelected
+          })
+          console.error('[Store] deleteIdea rollback:', result.error)
+        }
+      })
+    },
 
-    archiveIdea: (id) =>
+    archiveIdea: (id) => {
+      const previous = get().ideas[id] ? structuredClone(get().ideas[id]) : undefined
       set((state) => {
         const i = state.ideas[id]
-        if (i) {
-          i.status = 'archived'
-          writeUpdateIdea(i).catch((err) => console.error('[DB] archiveIdea failed:', err))
-        }
-      }),
+        if (i) i.status = 'archived'
+      })
+      const updated = get().ideas[id]
+      if (updated) {
+        writeUpdateIdea(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.ideas[id] = previous
+            })
+            console.error('[Store] archiveIdea rollback:', result.error)
+          }
+        })
+      }
+    },
 
-    linkIdea: (id, entity) =>
+    linkIdea: (id, entity) => {
+      const previous = get().ideas[id] ? structuredClone(get().ideas[id]) : undefined
       set((state) => {
         const i = state.ideas[id]
-        if (i) {
-          i.linkedEntity = entity
-          writeUpdateIdea(i).catch((err) => console.error('[DB] linkIdea failed:', err))
-        }
-      }),
+        if (i) i.linkedEntity = entity
+      })
+      const updated = get().ideas[id]
+      if (updated) {
+        writeUpdateIdea(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.ideas[id] = previous
+            })
+            console.error('[Store] linkIdea rollback:', result.error)
+          }
+        })
+      }
+    },
 
-    unlinkIdea: (id) =>
+    unlinkIdea: (id) => {
+      const previous = get().ideas[id] ? structuredClone(get().ideas[id]) : undefined
       set((state) => {
         const i = state.ideas[id]
-        if (i) {
-          i.linkedEntity = undefined
-          writeUpdateIdea(i).catch((err) => console.error('[DB] unlinkIdea failed:', err))
-        }
-      }),
+        if (i) i.linkedEntity = undefined
+      })
+      const updated = get().ideas[id]
+      if (updated) {
+        writeUpdateIdea(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.ideas[id] = previous
+            })
+            console.error('[Store] unlinkIdea rollback:', result.error)
+          }
+        })
+      }
+    },
 
     selectIdea: (id) =>
       set((state) => {
@@ -94,4 +153,3 @@ export const useIdeaList = () =>
 export function useIdeaCount(): number {
   return useIdeaStore((s) => Object.keys(s.ideas).length)
 }
-

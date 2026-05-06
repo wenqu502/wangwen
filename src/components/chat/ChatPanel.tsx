@@ -7,6 +7,7 @@ import { handleStreamingResponse } from '@/ai/streaming'
 import { buildSystemPrompt } from '@/ai/client'
 import { tools } from '@/ai/function-calling'
 import { executeTool } from '@/ai/tool-executor'
+import { loadMessages, saveMessages } from '@/db/operations'
 import type { ChatMessage } from '@/stores/app-store'
 
 /** 单条消息气泡 — memo 化避免大型列表重渲染 (P1-003) */
@@ -54,13 +55,32 @@ export function ChatPanel() {
   const messages = useAppStore((s) => s.messages)
   const addMessage = useAppStore((s) => s.addMessage)
   const updateMessage = useAppStore((s) => s.updateMessage)
+  const setMessages = useAppStore((s) => s.setMessages)
   const isLoading = useAppStore((s) => s.isLoading)
   const setIsLoading = useAppStore((s) => s.setIsLoading)
   const currentTab = useAppStore((s) => s.currentTab)
+  const currentWorkId = useAppStore((s) => s.currentWorkId)
 
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const panelId = useId()
+
+  // P0-002: 从 IndexedDB 加载对话历史
+  useEffect(() => {
+    if (!currentWorkId) return
+    loadMessages(currentWorkId).then((loaded) => {
+      if (loaded.length > 0) setMessages(loaded)
+    })
+  }, [currentWorkId, setMessages])
+
+  // P0-002: 消息变化时保存到 IndexedDB
+  useEffect(() => {
+    if (!currentWorkId || messages.length === 0) return
+    const timeout = setTimeout(() => {
+      saveMessages(currentWorkId, messages)
+    }, 500)
+    return () => clearTimeout(timeout)
+  }, [messages, currentWorkId])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -93,7 +113,7 @@ export function ChatPanel() {
     })
 
     try {
-      const systemPrompt = buildSystemPrompt(currentTab)
+      const systemPrompt = await buildSystemPrompt(currentTab, currentWorkId)
 
       const result = await handleStreamingResponse(
         {
@@ -138,7 +158,7 @@ export function ChatPanel() {
     } finally {
       setIsLoading(false)
     }
-  }, [input, isLoading, currentTab, messages, addMessage, updateMessage, setIsLoading])
+  }, [input, isLoading, currentTab, currentWorkId, messages, addMessage, updateMessage, setIsLoading])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

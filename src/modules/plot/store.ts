@@ -20,7 +20,7 @@ interface PlotState {
 }
 
 export const usePlotStore = create<PlotState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     nodes: {},
     selectedId: null,
 
@@ -30,22 +30,42 @@ export const usePlotStore = create<PlotState>()(
         for (const n of list) state.nodes[n.id] = n
       }),
 
-    addNode: (node) =>
+    addNode: (node) => {
       set((state) => {
         state.nodes[node.id] = node
-        writeAddPlotNode(node).catch((err) => console.error('[DB] addNode failed:', err))
-      }),
+      })
+      writeAddPlotNode(node).then((result) => {
+        if (!result.success) {
+          set((state) => {
+            delete state.nodes[node.id]
+          })
+          console.error('[Store] addNode rollback:', result.error)
+        }
+      })
+    },
 
-    updateNode: (id, updater) =>
+    updateNode: (id, updater) => {
+      const previous = get().nodes[id] ? structuredClone(get().nodes[id]) : undefined
       set((state) => {
         const n = state.nodes[id]
-        if (n) {
-          updater(n)
-          writeUpdatePlotNode(n).catch((err) => console.error('[DB] updateNode failed:', err))
-        }
-      }),
+        if (n) updater(n)
+      })
+      const updated = get().nodes[id]
+      if (updated) {
+        writeUpdatePlotNode(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.nodes[id] = previous
+            })
+            console.error('[Store] updateNode rollback:', result.error)
+          }
+        })
+      }
+    },
 
-    deleteNode: (id) =>
+    deleteNode: (id) => {
+      const previous = get().nodes[id] ? structuredClone(get().nodes[id]) : undefined
+      const previousSelected = get().selectedId
       set((state) => {
         delete state.nodes[id]
         if (state.selectedId === id) state.selectedId = null
@@ -54,8 +74,17 @@ export const usePlotStore = create<PlotState>()(
           n.parentIds = n.parentIds.filter((pid) => pid !== id)
           n.childIds = n.childIds.filter((cid) => cid !== id)
         }
-        writeDeletePlotNode(id).catch((err) => console.error('[DB] deleteNode failed:', err))
-      }),
+      })
+      writeDeletePlotNode(id).then((result) => {
+        if (!result.success && previous) {
+          set((state) => {
+            state.nodes[id] = previous
+            state.selectedId = previousSelected
+          })
+          console.error('[Store] deleteNode rollback:', result.error)
+        }
+      })
+    },
 
     selectNode: (id) =>
       set((state) => {
@@ -94,4 +123,3 @@ export function usePlotNodeCount(): number {
 export function useSelectedPlotNode(): PlotNode | null {
   return usePlotStore((s) => (s.selectedId ? s.nodes[s.selectedId] : null))
 }
-

@@ -16,7 +16,7 @@ interface SystemState {
 }
 
 export const useSystemStore = create<SystemState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     systems: {},
     selectedId: null,
 
@@ -26,27 +26,56 @@ export const useSystemStore = create<SystemState>()(
         for (const s of list) state.systems[s.id] = s
       }),
 
-    addSystem: (system) =>
+    addSystem: (system) => {
       set((state) => {
         state.systems[system.id] = system
-        writeAddSystem(system).catch((err) => console.error('[DB] addSystem failed:', err))
-      }),
+      })
+      writeAddSystem(system).then((result) => {
+        if (!result.success) {
+          set((state) => {
+            delete state.systems[system.id]
+          })
+          console.error('[Store] addSystem rollback:', result.error)
+        }
+      })
+    },
 
-    updateSystem: (id, updater) =>
+    updateSystem: (id, updater) => {
+      const previous = get().systems[id] ? structuredClone(get().systems[id]) : undefined
       set((state) => {
         const s = state.systems[id]
-        if (s) {
-          updater(s)
-          writeUpdateSystem(s).catch((err) => console.error('[DB] updateSystem failed:', err))
-        }
-      }),
+        if (s) updater(s)
+      })
+      const updated = get().systems[id]
+      if (updated) {
+        writeUpdateSystem(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.systems[id] = previous
+            })
+            console.error('[Store] updateSystem rollback:', result.error)
+          }
+        })
+      }
+    },
 
-    deleteSystem: (id) =>
+    deleteSystem: (id) => {
+      const previous = get().systems[id] ? structuredClone(get().systems[id]) : undefined
+      const previousSelected = get().selectedId
       set((state) => {
         delete state.systems[id]
         if (state.selectedId === id) state.selectedId = null
-        writeDeleteSystem(id).catch((err) => console.error('[DB] deleteSystem failed:', err))
-      }),
+      })
+      writeDeleteSystem(id).then((result) => {
+        if (!result.success && previous) {
+          set((state) => {
+            state.systems[id] = previous
+            state.selectedId = previousSelected
+          })
+          console.error('[Store] deleteSystem rollback:', result.error)
+        }
+      })
+    },
 
     selectSystem: (id) =>
       set((state) => {
@@ -63,4 +92,3 @@ export const useSystemList = () =>
 export function useSystemCount(): number {
   return useSystemStore((s) => Object.keys(s.systems).length)
 }
-

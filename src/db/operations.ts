@@ -10,6 +10,7 @@
 import { db } from './index'
 import type { Work, Character, PlotNode, RelationEdge, WorkSystem, Idea, StoryEvent, EventEdge } from '@/types'
 import type { Conversation } from '@/ai/types'
+import { encryptObjectFields, decryptObjectFields } from '@/utils/crypto'
 
 // === 错误类型 ===
 
@@ -27,10 +28,11 @@ export class DBError extends Error {
 
 // === 读操作 (P1-004: 读写分离) ===
 
-/** 按 workId 读取角色列表 */
+/** 按 workId 读取角色列表（P1-002: 自动解密敏感字段） */
 export async function readCharactersByWorkId(workId: string): Promise<Character[]> {
   try {
-    return await db.characters.where('workId').equals(workId).toArray()
+    const list = await db.characters.where('workId').equals(workId).toArray()
+    return await Promise.all(list.map((c) => decryptObjectFields(c)))
   } catch (err) {
     throw new DBError('读取角色数据失败', 'READ_ERROR', 'characters', err)
   }
@@ -99,10 +101,11 @@ export async function readAllWorks(): Promise<Work[]> {
   }
 }
 
-/** 按 ID 读取单个角色 */
+/** 按 ID 读取单个角色（P1-002: 自动解密） */
 export async function readCharacterById(id: string): Promise<Character | undefined> {
   try {
-    return await db.characters.get(id)
+    const raw = await db.characters.get(id)
+    return raw ? await decryptObjectFields(raw) : undefined
   } catch (err) {
     throw new DBError('读取角色失败', 'READ_ERROR', 'characters', err)
   }
@@ -116,11 +119,12 @@ interface WriteResult<T> {
   error?: DBError
 }
 
-/** 添加角色 — 事务包裹 */
+/** 添加角色 — 事务包裹（P1-002: 写入前加密敏感字段） */
 export async function writeAddCharacter(char: Character): Promise<WriteResult<Character>> {
   try {
+    const encrypted = await encryptObjectFields(char)
     await db.transaction('rw', db.characters, async () => {
-      await db.characters.add(char)
+      await db.characters.add(encrypted)
     })
     return { success: true, data: char }
   } catch (err) {
@@ -130,11 +134,12 @@ export async function writeAddCharacter(char: Character): Promise<WriteResult<Ch
   }
 }
 
-/** 更新角色 */
+/** 更新角色（P1-002: 写入前加密敏感字段） */
 export async function writeUpdateCharacter(char: Character): Promise<WriteResult<Character>> {
   try {
+    const encrypted = await encryptObjectFields(char)
     await db.transaction('rw', db.characters, async () => {
-      await db.characters.put(char)
+      await db.characters.put(encrypted)
     })
     return { success: true, data: char }
   } catch (err) {
@@ -186,10 +191,21 @@ export async function writeUpdatePlotNode(node: PlotNode): Promise<WriteResult<P
   }
 }
 
-/** 删除剧情节点 */
+/** 删除剧情节点（P0-005: 级联清理 parentIds/childIds） */
 export async function writeDeletePlotNode(id: string): Promise<WriteResult<void>> {
   try {
     await db.transaction('rw', db.plotNodes, async () => {
+      // 先清理其他节点对该节点的引用
+      const related = await db.plotNodes
+        .where('parentIds')
+        .equals(id)
+        .or('childIds')
+        .equals(id)
+        .toArray()
+      for (const node of related) {
+        const updated = { ...node, parentIds: node.parentIds.filter((pid) => pid !== id), childIds: node.childIds.filter((cid) => cid !== id) }
+        await db.plotNodes.put(updated)
+      }
       await db.plotNodes.delete(id)
     })
     return { success: true }
@@ -415,11 +431,12 @@ export async function writeDeleteEventEdge(id: string): Promise<WriteResult<void
 
 // === 批量操作 ===
 
-/** 批量添加角色 */
+/** 批量添加角色（P1-002: 写入前加密） */
 export async function writeBulkAddCharacters(chars: Character[]): Promise<WriteResult<number>> {
   try {
+    const encrypted = await Promise.all(chars.map((c) => encryptObjectFields(c)))
     await db.transaction('rw', db.characters, async () => {
-      await db.characters.bulkAdd(chars)
+      await db.characters.bulkAdd(encrypted)
     })
     return { success: true, data: chars.length }
   } catch (err) {
@@ -429,11 +446,12 @@ export async function writeBulkAddCharacters(chars: Character[]): Promise<WriteR
   }
 }
 
-/** 批量更新角色 */
+/** 批量更新角色（P1-002: 写入前加密） */
 export async function writeBulkPutCharacters(chars: Character[]): Promise<WriteResult<number>> {
   try {
+    const encrypted = await Promise.all(chars.map((c) => encryptObjectFields(c)))
     await db.transaction('rw', db.characters, async () => {
-      await db.characters.bulkPut(chars)
+      await db.characters.bulkPut(encrypted)
     })
     return { success: true, data: chars.length }
   } catch (err) {
@@ -443,7 +461,7 @@ export async function writeBulkPutCharacters(chars: Character[]): Promise<WriteR
   }
 }
 
-/** 全量数据加载（初始化用） */
+/** 全量数据加载（初始化用）（P1-002: 角色数据自动解密） */
 export async function loadAllDataByWorkId(workId: string) {
   try {
     const [characters, plotNodes, relations, systems, ideas, events, eventEdges] = await db.transaction(
@@ -461,7 +479,8 @@ export async function loadAllDataByWorkId(workId: string) {
         ])
       },
     )
-    return { success: true as const, characters, plotNodes, relations, systems, ideas, events, eventEdges }
+    const decryptedCharacters = await Promise.all(characters.map((c) => decryptObjectFields(c)))
+    return { success: true as const, characters: decryptedCharacters, plotNodes, relations, systems, ideas, events, eventEdges }
   } catch (err) {
     const dbErr = new DBError('加载数据失败', 'READ_ERROR', undefined, err)
     console.error('[DB] loadAllDataByWorkId:', dbErr)
@@ -513,6 +532,68 @@ export async function writeDeleteConversation(id: string): Promise<WriteResult<v
   } catch (err) {
     const dbErr = new DBError('删除对话失败', 'WRITE_ERROR', 'conversations', err)
     console.error('[DB] writeDeleteConversation:', dbErr)
+    return { success: false, error: dbErr }
+  }
+}
+
+// === P0-002: 简化消息列表持久化适配 ===
+
+import type { ChatMessage } from '@/stores/app-store'
+
+/** 为作品加载消息列表（简化适配） */
+export async function loadMessages(workId: string): Promise<ChatMessage[]> {
+  try {
+    const conv = await db.conversations.get(`msg_${workId}`)
+    if (!conv || !conv.branches.length) return []
+    const branch = conv.branches.find((b) => b.id === conv.activeBranchId) || conv.branches[0]
+    return branch.messages.map((m) => ({
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      timestamp: m.timestamp,
+    }))
+  } catch (err) {
+    console.error('[DB] loadMessages failed:', err)
+    return []
+  }
+}
+
+/** 保存作品的消息列表 */
+export async function saveMessages(workId: string, messages: ChatMessage[]): Promise<WriteResult<void>> {
+  try {
+    const convId = `msg_${workId}`
+    const now = new Date().toISOString()
+    const existing = await db.conversations.get(convId)
+
+    const conversation = existing || {
+      id: convId,
+      workId,
+      title: '对话历史',
+      branches: [{
+        id: 'main',
+        name: '主线',
+        messages: [],
+      }],
+      activeBranchId: 'main',
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    conversation.branches[0].messages = messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp,
+    }))
+    conversation.updatedAt = now
+
+    await db.transaction('rw', db.conversations, async () => {
+      await db.conversations.put(conversation as Conversation)
+    })
+    return { success: true }
+  } catch (err) {
+    const dbErr = new DBError('保存消息失败', 'WRITE_ERROR', 'conversations', err)
+    console.error('[DB] saveMessages:', dbErr)
     return { success: false, error: dbErr }
   }
 }

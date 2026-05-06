@@ -15,6 +15,7 @@ interface AppState {
   setIsLoading: (loading: boolean) => void
   addMessage: (msg: ChatMessage) => void
   updateMessage: (id: string, content: string) => void
+  setMessages: (messages: ChatMessage[]) => void
   clearMessages: () => void
 }
 
@@ -43,10 +44,17 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           messages: s.messages.map((m) => (m.id === id ? { ...m, content } : m)),
         })),
+      setMessages: (messages) => set({ messages }),
       clearMessages: () => set({ messages: [] }),
     }),
     {
       name: 'wangwen-app-store',
+      // P0-002: messages 不再持久化到 localStorage，改用 IndexedDB
+      partialize: (state) => ({
+        currentWorkId: state.currentWorkId,
+        currentTab: state.currentTab,
+        isChatPanelOpen: state.isChatPanelOpen,
+      }),
     }
   )
 )

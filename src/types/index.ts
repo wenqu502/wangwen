@@ -27,20 +27,11 @@ export interface Character {
   arc?: string
   quotes: string[]
   abilities: string[]
-  relations: CharacterRelation[]
   firstAppearance?: string
   status: 'alive' | 'dead' | 'missing' | 'sealed'
   images: string[]
   createdAt: string
   updatedAt: string
-}
-
-export interface CharacterRelation {
-  targetId: string
-  targetName?: string
-  type: string
-  description: string
-  isHidden: boolean
 }
 
 export interface PlotNode {

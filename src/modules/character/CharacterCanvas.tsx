@@ -41,7 +41,6 @@ export function CharacterCanvas() {
       background: '',
       quotes: [],
       abilities: [],
-      relations: [],
       status: 'alive',
       images: [],
       createdAt: new Date().toISOString(),

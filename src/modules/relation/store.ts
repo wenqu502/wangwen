@@ -20,7 +20,7 @@ interface RelationState {
 }
 
 export const useRelationStore = create<RelationState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     edges: {},
     selectedId: null,
     customRelationTypes: [],
@@ -31,27 +31,56 @@ export const useRelationStore = create<RelationState>()(
         for (const e of list) state.edges[e.id] = e
       }),
 
-    addEdge: (edge) =>
+    addEdge: (edge) => {
       set((state) => {
         state.edges[edge.id] = edge
-        writeAddRelation(edge).catch((err) => console.error('[DB] addEdge failed:', err))
-      }),
+      })
+      writeAddRelation(edge).then((result) => {
+        if (!result.success) {
+          set((state) => {
+            delete state.edges[edge.id]
+          })
+          console.error('[Store] addEdge rollback:', result.error)
+        }
+      })
+    },
 
-    updateEdge: (id, updater) =>
+    updateEdge: (id, updater) => {
+      const previous = get().edges[id] ? structuredClone(get().edges[id]) : undefined
       set((state) => {
         const e = state.edges[id]
-        if (e) {
-          updater(e)
-          writeUpdateRelation(e).catch((err) => console.error('[DB] updateEdge failed:', err))
-        }
-      }),
+        if (e) updater(e)
+      })
+      const updated = get().edges[id]
+      if (updated) {
+        writeUpdateRelation(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.edges[id] = previous
+            })
+            console.error('[Store] updateEdge rollback:', result.error)
+          }
+        })
+      }
+    },
 
-    deleteEdge: (id) =>
+    deleteEdge: (id) => {
+      const previous = get().edges[id] ? structuredClone(get().edges[id]) : undefined
+      const previousSelected = get().selectedId
       set((state) => {
         delete state.edges[id]
         if (state.selectedId === id) state.selectedId = null
-        writeDeleteRelation(id).catch((err) => console.error('[DB] deleteEdge failed:', err))
-      }),
+      })
+      writeDeleteRelation(id).then((result) => {
+        if (!result.success && previous) {
+          set((state) => {
+            state.edges[id] = previous
+            state.selectedId = previousSelected
+          })
+          console.error('[Store] deleteEdge rollback:', result.error)
+        }
+      })
+    },
 
     selectEdge: (id) =>
       set((state) => {
@@ -80,4 +109,3 @@ export const useRelationEdgeList = () =>
 export function useRelationEdgeCount(): number {
   return useRelationStore((s) => Object.keys(s.edges).length)
 }
-

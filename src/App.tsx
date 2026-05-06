@@ -18,6 +18,7 @@ const PlotCanvas = lazy(() => import('@/modules/plot/PlotCanvas').then(m => ({ d
 const RelationCanvas = lazy(() => import('@/modules/relation/RelationCanvas').then(m => ({ default: m.RelationCanvas })))
 const SystemCanvas = lazy(() => import('@/modules/system/SystemCanvas').then(m => ({ default: m.SystemCanvas })))
 const IdeaCanvas = lazy(() => import('@/modules/idea/IdeaCanvas').then(m => ({ default: m.IdeaCanvas })))
+const EventCanvas = lazy(() => import('@/modules/event/EventCanvas').then(m => ({ default: m.EventCanvas })))
 const ReportCanvas = lazy(() => import('@/modules/report/ReportCanvas').then(m => ({ default: m.ReportCanvas })))
 import {
   Users,
@@ -26,6 +27,7 @@ import {
   Layers,
   Lightbulb,
   FileCheck,
+  CalendarDays,
   PanelRightClose,
   PanelRightOpen,
   Search,
@@ -41,6 +43,7 @@ const TABS = [
   { id: 'relation' as const, label: '关系', icon: Network },
   { id: 'system' as const, label: '体系', icon: Layers },
   { id: 'idea' as const, label: '灵感', icon: Lightbulb },
+  { id: 'event' as const, label: '事件', icon: CalendarDays },
   { id: 'report' as const, label: '校验报告', icon: FileCheck },
 ]
 
@@ -50,6 +53,7 @@ const TAB_COMPONENTS = {
   relation: RelationCanvas,
   system: SystemCanvas,
   idea: IdeaCanvas,
+  event: EventCanvas,
   report: ReportCanvas,
 } as const
 

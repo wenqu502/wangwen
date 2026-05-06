@@ -55,6 +55,12 @@ export const FEATURE_FLAGS = {
 export function validateEnv(): string[] {
   const errors: string[] = []
 
+  // 生产环境禁止硬编码 API Key
+  if (APP_CONFIG.isProd && AI_CONFIG.apiKey) {
+    errors.push('生产环境禁止在环境变量中硬编码 API Key')
+    console.error('[Env] 生产环境检测到 VITE_AI_API_KEY 硬编码，已忽略')
+  }
+
   // 开发环境检查 API Key 是否硬编码
   if (APP_CONFIG.isDev && AI_CONFIG.apiKey) {
     console.warn('[Env] 检测到 VITE_AI_API_KEY 硬编码在环境变量中，建议通过 UI 设置面板输入')

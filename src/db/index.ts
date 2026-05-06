@@ -58,7 +58,6 @@ class WangWenDB extends Dexie {
             }
             if (tableName === 'characters') {
               record.status = record.status || 'alive'
-              record.relations = record.relations || []
               record.images = record.images || []
             }
             if (tableName === 'plotNodes') {

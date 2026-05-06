@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 import { useShallow } from 'zustand/shallow'
 import type { Character } from '@/types'
 import { writeAddCharacter, writeUpdateCharacter, writeDeleteCharacter } from '@/db/operations'
+import { useRelationStore } from '@/modules/relation/store'
 
 interface CharacterState {
   characters: Record<string, Character>
@@ -16,7 +17,7 @@ interface CharacterState {
 }
 
 export const useCharacterStore = create<CharacterState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     characters: {},
     selectedId: null,
 
@@ -26,27 +27,76 @@ export const useCharacterStore = create<CharacterState>()(
         for (const c of list) state.characters[c.id] = c
       }),
 
-    addCharacter: (char) =>
+    addCharacter: (char) => {
       set((state) => {
         state.characters[char.id] = char
-        writeAddCharacter(char).catch((err) => console.error('[DB] addCharacter failed:', err))
-      }),
+      })
+      writeAddCharacter(char).then((result) => {
+        if (!result.success) {
+          set((state) => {
+            delete state.characters[char.id]
+          })
+          console.error('[Store] addCharacter rollback:', result.error)
+        }
+      })
+    },
 
-    updateCharacter: (id, updater) =>
+    updateCharacter: (id, updater) => {
+      const previous = get().characters[id] ? structuredClone(get().characters[id]) : undefined
       set((state) => {
         const c = state.characters[id]
-        if (c) {
-          updater(c)
-          writeUpdateCharacter(c).catch((err) => console.error('[DB] updateCharacter failed:', err))
-        }
-      }),
+        if (c) updater(c)
+      })
+      const updated = get().characters[id]
+      if (updated) {
+        writeUpdateCharacter(updated).then((result) => {
+          if (!result.success && previous) {
+            set((state) => {
+              state.characters[id] = previous
+            })
+            console.error('[Store] updateCharacter rollback:', result.error)
+          }
+        })
+      }
+    },
 
-    deleteCharacter: (id) =>
+    deleteCharacter: (id) => {
+      const previous = get().characters[id] ? structuredClone(get().characters[id]) : undefined
+      const previousSelected = get().selectedId
+
+      // P0-004: 级联删除关联的关系
+      const relationStore = useRelationStore.getState()
+      const relatedEdgeIds = Object.values(relationStore.edges)
+        .filter((e) => e.sourceId === id || e.targetId === id)
+        .map((e) => e.id)
+      const previousEdges = relatedEdgeIds
+        .map((eid) => ({ id: eid, edge: relationStore.edges[eid] ? structuredClone(relationStore.edges[eid]) : undefined }))
+        .filter((item): item is { id: string; edge: NonNullableNullable<typeof item.edge> } => !!item.edge)
+
+      // 先删除内存中的关系和角色
+      relatedEdgeIds.forEach((eid) => {
+        relationStore.deleteEdge(eid)
+      })
       set((state) => {
         delete state.characters[id]
         if (state.selectedId === id) state.selectedId = null
-        writeDeleteCharacter(id).catch((err) => console.error('[DB] deleteCharacter failed:', err))
-      }),
+      })
+
+      writeDeleteCharacter(id).then((result) => {
+        if (!result.success && previous) {
+          // 恢复角色
+          set((state) => {
+            state.characters[id] = previous
+            state.selectedId = previousSelected
+          })
+          // 恢复关系
+          previousEdges.forEach(({ id: eid, edge }) => {
+            relationStore.addEdge(edge)
+          })
+          console.error('[Store] deleteCharacter rollback:', result.error)
+        }
+      })
+    },
 
     selectCharacter: (id) =>
       set((state) => {
@@ -77,4 +127,3 @@ export function useSelectedCharacter(): Character | null {
 export function useSelectedCharacterId(): string | null {
   return useCharacterStore((s) => s.selectedId)
 }
-
