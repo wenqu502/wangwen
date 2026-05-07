@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/app-store'
+import { useAuthStore } from '@/stores/auth-store'
 import { useInitData } from '@/hooks/use-init-data'
 import type { ModuleTab } from '@/types'
 import { ChatPanel } from '@/components/chat/ChatPanel'
@@ -17,6 +18,7 @@ import type { Work } from '@/types'
 import { SearchModal } from '@/components/search/SearchModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { OfflineBanner } from '@/components/OfflineBanner'
+import { api } from '@/api/client'
 
 const CharacterCanvas = lazy(() => import('@/modules/character/CharacterCanvas').then(m => ({ default: m.CharacterCanvas })))
 const PlotCanvas = lazy(() => import('@/modules/plot/PlotCanvas').then(m => ({ default: m.PlotCanvas })))
@@ -78,6 +80,95 @@ function getTabFromHash(): ModuleTab | null {
 /** 默认 Tab（无效 hash 时回退） */
 const DEFAULT_TAB: ModuleTab = 'character'
 
+function LoginPage({ onLogin }: { onLogin: () => void }) {
+  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register'
+      const payload = mode === 'login' ? { username, password } : { username, email, password }
+      const res = await api.post<{ access_token: string }>(endpoint, payload)
+      if (res.access_token) {
+        useAuthStore.getState().setToken(res.access_token)
+        onLogin()
+      } else {
+        setError('登录失败')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '请求失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="h-screen w-screen flex items-center justify-center bg-background">
+      <div className="w-full max-w-sm p-6 bg-card border border-border rounded-xl shadow-lg">
+        <h1 className="text-2xl font-bold text-center text-foreground mb-1">织文</h1>
+        <p className="text-sm text-muted-foreground text-center mb-6">AI 网文创作助手</p>
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setMode('login')}
+            className={cn('flex-1 py-2 text-sm font-medium rounded-md transition-colors', mode === 'login' ? 'bg-brand text-white' : 'bg-accent text-muted-foreground')}
+          >
+            登录
+          </button>
+          <button
+            onClick={() => setMode('register')}
+            className={cn('flex-1 py-2 text-sm font-medium rounded-md transition-colors', mode === 'register' ? 'bg-brand text-white' : 'bg-accent text-muted-foreground')}
+          >
+            注册
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            placeholder="用户名"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
+            required
+          />
+          {mode === 'register' && (
+            <input
+              type="email"
+              placeholder="邮箱"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
+              required
+            />
+          )}
+          <input
+            type="password"
+            placeholder="密码"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
+            required
+          />
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 text-sm font-medium bg-brand text-white rounded-md hover:bg-brand-hover transition-colors disabled:opacity-50"
+          >
+            {loading ? '处理中...' : mode === 'login' ? '登录' : '注册'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const {
     currentTab,
@@ -86,6 +177,41 @@ function App() {
     toggleChatPanel,
     currentWorkId,
   } = useAppStore()
+
+  const { token, isLoading: authLoading, setIsLoading, setUser } = useAuthStore()
+  const [authChecked, setAuthChecked] = useState(false)
+
+  // 验证 token 有效性
+  useEffect(() => {
+    async function verify() {
+      if (!token) {
+        setAuthChecked(true)
+        setIsLoading(false)
+        return
+      }
+      try {
+        const user = await api.get<{ id: number; username: string; email: string }>('/api/me')
+        setUser(user)
+      } catch {
+        useAuthStore.getState().setToken(null)
+      }
+      setAuthChecked(true)
+      setIsLoading(false)
+    }
+    verify()
+  }, [token])
+
+  if (!authChecked || authLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-brand" />
+      </div>
+    )
+  }
+
+  if (!token) {
+    return <LoginPage onLogin={() => setAuthChecked(true)} />
+  }
 
   const isReady = useInitData(currentWorkId)
 
@@ -403,6 +529,12 @@ function App() {
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <div className="h-5 w-px bg-border" />
+          <button
+            onClick={() => useAuthStore.getState().logout()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent rounded-md transition-colors"
+          >
+            退出
+          </button>
           <button
             onClick={toggleChatPanel}
             className={cn(
